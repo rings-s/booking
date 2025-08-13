@@ -1,0 +1,122 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/typography";
+
+/*
+  Tailwind v4 configuration via CSS
+  - @theme exposes tokens as first-class Tailwind theme values (e.g. text-primary, bg-surface)
+  - Keep semantic tokens in sync with brand palette
+*/
+@theme {
+  --color-primary: #4f46e5;        /* indigo-600 */
+  --color-primary-600: #4f46e5;
+  --color-primary-700: #4338ca;
+  --color-secondary: #06b6d4;      /* cyan-500 */
+  --color-success: #10b981;        /* emerald-500 */
+  --color-warning: #f59e0b;        /* amber-500 */
+  --color-danger:  #ef4444;        /* red-500 */
+
+  --color-surface:  #ffffff;
+  --color-surface-2:#f9fafb;       /* gray-50 */
+  --color-on-surface: #111827;     /* gray-900 */
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+/* System-level preferences */
+:root {
+  color-scheme: light dark;
+}
+
+/* Base resets and typography enhancements */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "kern" 1;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply antialiased bg-surface text-on-surface;
+    font-family: var(--font-sans);
+    min-height: 100vh;
+  }
+
+  /* Improve default link and focus styles for a11y */
+  a {
+    @apply text-primary no-underline hover:underline underline-offset-4;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary/60 ring-offset-2 ring-offset-surface;
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Scrollbar styling (webkit-based) */
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    @apply bg-surface-2;
+  }
+  *::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 hover:bg-gray-400 rounded-full;
+  }
+}
+
+/* Reusable utilities and compositions */
+@layer utilities {
+  .container-responsive {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .heading-1 { @apply text-3xl sm:text-4xl font-semibold tracking-tight; }
+  .heading-2 { @apply text-2xl sm:text-3xl font-semibold tracking-tight; }
+  .heading-3 { @apply text-xl sm:text-2xl font-semibold; }
+
+  /* Base button utility shared across variants. In Tailwind v4, @apply cannot include custom classes, so share via grouped selector. */
+  .btn, .btn-primary, .btn-secondary, .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium
+           transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60
+           disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn { @apply bg-gray-100 text-on-surface hover:bg-gray-200; }
+  .btn-primary { @apply bg-primary text-white hover:bg-primary-700; }
+  .btn-secondary { @apply bg-secondary text-white hover:bg-cyan-600; }
+  .btn-ghost { @apply bg-transparent text-on-surface hover:bg-surface-2; }
+
+  .card {
+    @apply bg-surface shadow-sm rounded-xl border border-gray-200/60 dark:border-gray-800;
+  }
+  .card-body { @apply p-4 sm:p-6; }
+
+  .surface-muted { @apply bg-surface-2; }
+}
+
+/* Component layer helpers */
+@layer components {
+  .form-field {
+    @apply space-y-1;
+  }
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+  .form-help {
+    @apply text-xs text-gray-500;
+  }
+}
