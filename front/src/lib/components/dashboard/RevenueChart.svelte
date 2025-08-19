@@ -1,6 +1,6 @@
 <!-- src/lib/components/dashboard/RevenueChart.svelte -->
 <script>
-    import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import Chart from 'chart.js/auto';
     import { formatCurrency } from '$lib/utils/formatters';
     import Card from '../common/Card.svelte';
@@ -8,20 +8,22 @@
     import Button from '../common/Button.svelte';
     import Spinner from '../common/Spinner.svelte';
     
-    export let data = [];
-    export let loading = false;
-    export let title = 'Revenue Overview';
-    export let height = '300px';
-    export let period = 'month'; // 'week', 'month', 'quarter', 'year'
-    export let comparison = false;
-    export let previousData = [];
+    let {
+        data = [],
+        loading = false,
+        title = 'Revenue Overview',
+        height = '300px',
+        period = 'month', // 'week', 'month', 'quarter', 'year'
+        comparison = false,
+        previousData = [],
+        onperiodchange = () => {},
+        ...restProps
+    } = $props();
     
-    let canvas;
-    let chart;
-    let selectedPeriod = period;
-    let chartType = 'line'; // 'line', 'bar'
-    
-    const dispatch = createEventDispatcher();
+    let canvas = $state();
+    let chart = $state();
+    let selectedPeriod = $state(period);
+    let chartType = $state('line'); // 'line', 'bar'
     
     const periodOptions = [
       { value: 'week', label: 'This Week' },
@@ -42,11 +44,27 @@
       };
     });
     
-    $: if (chart && dataArray.length > 0) {
-      updateChart();
-    }
+    $effect(() => {
+      console.log('RevenueChart $effect:', {
+        hasCanvas: !!canvas,
+        dataLength: dataArray.length,
+        hasChart: !!chart,
+        data: dataArray.slice(0, 3)
+      });
+      
+      if (canvas && dataArray.length > 0) {
+        if (chart) {
+          console.log('RevenueChart: Updating existing chart');
+          updateChart();
+        } else {
+          console.log('RevenueChart: Initializing new chart');
+          initChart();
+        }
+      }
+    });
     
     function initChart() {
+      if (!canvas) return;
       const ctx = canvas.getContext('2d');
       
       const datasets = [{
@@ -149,41 +167,43 @@
     
     function handlePeriodChange() {
       // Dispatch event to parent to reload data
-      dispatch('periodChange', selectedPeriod);
+      onperiodchange(selectedPeriod);
     }
     
     // Calculate summary stats - ensure data is always an array
-    $: dataArray = Array.isArray(data) ? data : [];
-    $: totalRevenue = dataArray.reduce((sum, d) => sum + (d.revenue || d.value || 0), 0);
-    $: averageRevenue = dataArray.length > 0 ? totalRevenue / dataArray.length : 0;
-    $: maxRevenue = dataArray.length > 0 ? Math.max(...dataArray.map(d => d.revenue || d.value || 0)) : 0;
-    $: minRevenue = dataArray.length > 0 ? Math.min(...dataArray.map(d => d.revenue || d.value || 0)) : 0;
+    let dataArray = $derived(Array.isArray(data) ? data : []);
+    let totalRevenue = $derived(dataArray.reduce((sum, d) => sum + (d.revenue || d.value || 0), 0));
+    let averageRevenue = $derived(dataArray.length > 0 ? totalRevenue / dataArray.length : 0);
+    let maxRevenue = $derived(dataArray.length > 0 ? Math.max(...dataArray.map(d => d.revenue || d.value || 0)) : 0);
+    let minRevenue = $derived(dataArray.length > 0 ? Math.min(...dataArray.map(d => d.revenue || d.value || 0)) : 0);
   </script>
   
-  <Card>
-    <div slot="header" class="flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900">{title}</h3>
-      <div class="flex items-center space-x-2">
-        <Select
-          bind:value={selectedPeriod}
-          options={periodOptions}
-          on:change={handlePeriodChange}
-        />
-        <Button
-          variant="outline"
-          size="sm"
-          on:click={toggleChartType}
-        >
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {#if chartType === 'line'}
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            {:else}
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-            {/if}
-          </svg>
-        </Button>
+  <Card >
+    {#snippet header()}
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">{title}</h3>
+        <div class="flex items-center space-x-2">
+          <Select
+            bind:value={selectedPeriod}
+            options={periodOptions}
+            on:change={handlePeriodChange}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            on:click={toggleChartType}
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {#if chartType === 'line'}
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              {:else}
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+              {/if}
+            </svg>
+          </Button>
+        </div>
       </div>
-    </div>
+    {/snippet}
     
     {#if loading}
       <div class="flex items-center justify-center" style="height: {height}">

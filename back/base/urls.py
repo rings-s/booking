@@ -84,6 +84,14 @@ urlpatterns = [
          name='booking-mark-no-show'),
     
     # Custom business endpoints
+    path('businesses/search/', 
+         BusinessViewSet.as_view({'get': 'search'}), 
+         name='business-search'),
+    
+    path('businesses/featured/', 
+         BusinessViewSet.as_view({'get': 'featured'}), 
+         name='business-featured'),
+    
     path('businesses/my/', 
          BusinessViewSet.as_view({'get': 'my'}), 
          name='business-my'),
@@ -128,6 +136,15 @@ urlpatterns = [
          BusinessViewSet.as_view({'get': 'recent_activity'}), 
          name='business-recent-activity'),
     
+    # Custom service endpoints
+    path('services/bulk-update/', 
+         ServiceViewSet.as_view({'post': 'bulk_update'}), 
+         name='service-bulk-update'),
+    
+    path('services/update-order/', 
+         ServiceViewSet.as_view({'post': 'update_order'}), 
+         name='service-update-order'),
+    
     # Custom customer endpoints
     path('customers/me/', 
          CustomerViewSet.as_view({'get': 'me'}), 
@@ -144,6 +161,18 @@ urlpatterns = [
     path('customers/<uuid:pk>/add-preferred-business/', 
          CustomerViewSet.as_view({'post': 'add_preferred_business'}), 
          name='customer-add-preferred'),
+    
+    path('customers/<uuid:pk>/remove-preferred-business/', 
+         CustomerViewSet.as_view({'post': 'remove_preferred_business'}), 
+         name='customer-remove-preferred'),
+    
+    path('customers/<uuid:pk>/booking-history/', 
+         CustomerViewSet.as_view({'get': 'booking_history'}), 
+         name='customer-booking-history'),
+    
+    path('customers/<uuid:pk>/stats/', 
+         CustomerViewSet.as_view({'get': 'stats'}), 
+         name='customer-stats'),
     
     # Custom review endpoints
     path('reviews/<uuid:pk>/respond/', 

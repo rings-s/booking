@@ -1,6 +1,5 @@
 <!-- src/lib/components/booking/BookingCard.svelte -->
 <script>
-  import { createEventDispatcher } from 'svelte';
   import { goto } from '$app/navigation';
   import { formatDate, formatTime, formatCurrency, formatRelativeTime } from '$lib/utils/formatters';
   import Card from '../common/Card.svelte';
@@ -11,16 +10,20 @@
   import { bookingStore } from '$lib/stores/booking';
   import toast from 'svelte-french-toast';
   
-  export let booking;
-  export let showActions = true;
-  export let customerView = false;
-  export let compact = false;
+  let {
+    booking,
+    showActions = true,
+    customerView = false,
+    compact = false,
+    oncancel = () => {},
+    onconfirm = () => {},
+    onupdate = () => {},
+    ...restProps
+  } = $props();
   
-  const dispatch = createEventDispatcher();
-  
-  let showCancelModal = false;
-  let cancelReason = '';
-  let processing = false;
+  let showCancelModal = $state(false);
+  let cancelReason = $state('');
+  let processing = $state(false);
   
   function handleView() {
     goto(`/bookings/${booking.id}`);
@@ -41,7 +44,7 @@
     
     if (!error) {
       showCancelModal = false;
-      dispatch('cancelled', booking);
+      oncancel(booking);
     }
     processing = false;
   }
@@ -51,7 +54,7 @@
     const { error } = await bookingStore.confirmBooking(booking.id);
     
     if (!error) {
-      dispatch('confirmed', booking);
+      onconfirm(booking);
     }
     processing = false;
   }
@@ -61,7 +64,7 @@
     const { error } = await bookingStore.completeBooking(booking.id);
     
     if (!error) {
-      dispatch('completed', booking);
+      onupdate(booking);
     }
     processing = false;
   }
@@ -71,7 +74,7 @@
     const { error } = await bookingStore.markAsNoShow(booking.id);
     
     if (!error) {
-      dispatch('noshow', booking);
+      onupdate(booking);
     }
     processing = false;
   }
@@ -89,18 +92,18 @@
   }
   
   // Determine if booking is upcoming, past, or today
-  $: isToday = new Date(booking.booking_date).toDateString() === new Date().toDateString();
-  $: isPast = new Date(booking.booking_date) < new Date() && !isToday;
-  $: isUpcoming = new Date(booking.booking_date) > new Date();
+  let isToday = $derived(new Date(booking.booking_date).toDateString() === new Date().toDateString());
+  let isPast = $derived(new Date(booking.booking_date) < new Date() && !isToday);
+  let isUpcoming = $derived(new Date(booking.booking_date) > new Date());
   
   // Determine available actions based on status and time
-  $: canCancel = ['pending', 'confirmed'].includes(booking.status) && !isPast;
-  $: canConfirm = booking.status === 'pending' && !customerView && !isPast;
-  $: canComplete = booking.status === 'confirmed' && !customerView && (isPast || isToday);
-  $: canMarkNoShow = booking.status === 'confirmed' && !customerView && isPast;
-  $: canReschedule = ['pending', 'confirmed'].includes(booking.status) && !isPast;
-  $: canReview = booking.status === 'completed' && customerView && !booking.review;
-  $: canPay = !booking.is_paid && ['pending', 'confirmed'].includes(booking.status);
+  let canCancel = $derived(['pending', 'confirmed'].includes(booking.status) && !isPast);
+  let canConfirm = $derived(booking.status === 'pending' && !customerView && !isPast);
+  let canComplete = $derived(booking.status === 'confirmed' && !customerView && (isPast || isToday));
+  let canMarkNoShow = $derived(booking.status === 'confirmed' && !customerView && isPast);
+  let canReschedule = $derived(['pending', 'confirmed'].includes(booking.status) && !isPast);
+  let canReview = $derived(booking.status === 'completed' && customerView && !booking.review);
+  let canPay = $derived(!booking.is_paid && ['pending', 'confirmed'].includes(booking.status));
 </script>
 
 <Card padding={compact ? 'sm' : 'md'}>
@@ -320,7 +323,7 @@
 </Card>
 
 <!-- Cancel Modal -->
-<Modal bind:open={showCancelModal} title="Cancel Booking" size="md">
+<Modal bind:open={showCancelModal} title="Cancel Booking" size="md" footer={cancelFooter}>
   <div class="space-y-4">
     <Alert type="warning">
       Are you sure you want to cancel this booking? This action cannot be undone.
@@ -357,8 +360,10 @@
       </dl>
     </div>
   </div>
-  
-  <div slot="footer" class="flex justify-end gap-3">
+</Modal>
+
+{#snippet cancelFooter()}
+  <div class="flex justify-end gap-3">
     <Button variant="outline" on:click={() => showCancelModal = false}>
       Keep Booking
     </Button>
@@ -366,4 +371,4 @@
       Cancel Booking
     </Button>
   </div>
-</Modal>
+{/snippet}

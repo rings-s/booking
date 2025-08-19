@@ -1,5 +1,6 @@
 // src/lib/api/auth.js
-import apiClient from './clients';
+import apiClient, { createAPIClient } from './clients';
+import { browser } from '$app/environment';
 
 export const authAPI = {
   async register(userData) {
@@ -55,3 +56,14 @@ export const authAPI = {
     return apiClient.post('/accounts/token/refresh/', { refresh: refreshToken });
   }
 };
+
+// Server-side safe function to get current user with SvelteKit fetch
+export async function getCurrentUserSSR(fetch) {
+  if (!browser) return { data: null, error: null };
+  
+  const token = localStorage.getItem('access_token');
+  if (!token) return { data: null, error: null };
+  
+  const client = createAPIClient(fetch);
+  return client.get('/accounts/users/me/');
+}

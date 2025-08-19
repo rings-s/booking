@@ -2,15 +2,18 @@
   import { createEventDispatcher } from 'svelte';
 
   // Filters object is bound from parent
-  export let filters = {
-    priceRange: '',
-    rating: 0,
-    openNow: false,
-    hasOffers: false,
-    categories: [],
-    services: [],
-    distance: 10
-  };
+  let {
+    filters = $bindable({
+      priceRange: '',
+      rating: 0,
+      openNow: false,
+      hasOffers: false,
+      categories: [],
+      services: [],
+      distance: 10
+    }),
+    ...restProps
+  } = $props();
 
   const dispatch = createEventDispatcher();
 

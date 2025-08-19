@@ -1,11 +1,14 @@
 <!-- src/lib/components/review/StarRating.svelte -->
 <script>
-    export let rating = 0;
-    export let maxRating = 5;
-    export let interactive = false;
-    export let size = 'md';
-    export let showCount = false;
-    export let count = 0;
+    let {
+        rating = $bindable(0),
+        maxRating = 5,
+        interactive = false,
+        size = 'md',
+        showCount = false,
+        count = 0,
+        ...restProps
+    } = $props();
     
     const sizes = {
       sm: 'w-4 h-4',

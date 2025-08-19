@@ -9,6 +9,17 @@ const API_URL = PUBLIC_API_URL || 'http://localhost:8000/api';
 class APIClient {
   constructor() {
     this.baseURL = API_URL;
+    this.fetch = null; // Will be set by SvelteKit load functions
+  }
+
+  // Set the fetch function to use (SvelteKit's fetch or window.fetch)
+  setFetch(fetchFunction) {
+    this.fetch = fetchFunction;
+  }
+
+  // Get the appropriate fetch function
+  getFetch() {
+    return this.fetch || fetch;
   }
 
   getAuthToken() {
@@ -18,8 +29,8 @@ class APIClient {
 
   setAuthTokens(access, refresh) {
     if (!browser) return;
-    localStorage.setItem('access_token', access);
-    localStorage.setItem('refresh_token', refresh);
+    if (access) localStorage.setItem('access_token', access);
+    if (refresh) localStorage.setItem('refresh_token', refresh);
   }
 
   clearAuthTokens() {
@@ -33,7 +44,7 @@ class APIClient {
     if (!refreshToken) return null;
 
     try {
-      const response = await fetch(`${this.baseURL}/accounts/token/refresh/`, {
+      const response = await this.getFetch()(`${this.baseURL}/accounts/token/refresh/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -76,14 +87,14 @@ class APIClient {
     }
 
     try {
-      let response = await fetch(url, config);
+      let response = await this.getFetch()(url, config);
 
       // Handle 401 and retry with refreshed token
       if (response.status === 401 && browser) {
         const newToken = await this.refreshAccessToken();
         if (newToken) {
           config.headers.Authorization = `Bearer ${newToken}`;
-          response = await fetch(url, config);
+          response = await this.getFetch()(url, config);
         } else {
           this.clearAuthTokens();
           if (browser) {
@@ -230,4 +241,12 @@ class APIClient {
 }
 
 export const apiClient = new APIClient();
+
+// Factory function to create API client with SvelteKit fetch
+export function createAPIClient(fetch) {
+  const client = new APIClient();
+  client.setFetch(fetch);
+  return client;
+}
+
 export default apiClient;

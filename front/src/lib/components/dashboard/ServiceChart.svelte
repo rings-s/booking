@@ -7,17 +7,20 @@
     import Select from '../common/Select.svelte';
     import Spinner from '../common/Spinner.svelte';
     
-    export let data = [];
-    export let loading = false;
-    export let title = 'Service Performance';
-    export let height = '300px';
-    export let chartType = 'doughnut'; // 'doughnut', 'bar', 'horizontal-bar'
-    export let metric = 'bookings'; // 'bookings', 'revenue'
+    let {
+        data = [],
+        loading = false,
+        title = 'Service Performance',
+        height = '300px',
+        chartType = 'doughnut', // 'doughnut', 'bar', 'horizontal-bar'
+        metric = 'bookings', // 'bookings', 'revenue'
+        ...restProps
+    } = $props();
     
-    let canvas;
-    let chart;
-    let selectedChartType = chartType;
-    let selectedMetric = metric;
+    let canvas = $state();
+    let chart = $state();
+    let selectedChartType = $state(chartType);
+    let selectedMetric = $state(metric);
     
     const chartTypeOptions = [
       { value: 'doughnut', label: 'Doughnut' },
@@ -53,11 +56,18 @@
       };
     });
     
-    $: if (chart && dataArray.length > 0) {
-      updateChart();
-    }
+    $effect(() => {
+      if (canvas && dataArray.length > 0) {
+        if (chart) {
+          updateChart();
+        } else {
+          initChart();
+        }
+      }
+    });
     
     function initChart() {
+      if (!canvas) return;
       const ctx = canvas.getContext('2d');
       
       const chartData = processData(data);
@@ -179,30 +189,32 @@
     }
     
     // Calculate top service - ensure data is always an array
-    $: dataArray = Array.isArray(data) ? data : [];
-    $: topService = dataArray.reduce((max, service) => {
+    let dataArray = $derived(Array.isArray(data) ? data : []);
+    let topService = $derived(dataArray.reduce((max, service) => {
       const value = selectedMetric === 'revenue' ? (service.revenue || 0) : (service.bookings || service.count || 0);
       const maxValue = selectedMetric === 'revenue' ? (max.revenue || 0) : (max.bookings || max.count || 0);
       return value > maxValue ? service : max;
-    }, dataArray[0] || {});
+    }, dataArray[0] || {}));
   </script>
   
-  <Card>
-    <div slot="header" class="flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900">{title}</h3>
-      <div class="flex items-center space-x-2">
-        <Select
-          bind:value={selectedMetric}
-          options={metricOptions}
-          on:change={handleMetricChange}
-        />
-        <Select
-          bind:value={selectedChartType}
-          options={chartTypeOptions}
-          on:change={handleChartTypeChange}
-        />
+  <Card >
+    {#snippet header()}
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">{title}</h3>
+        <div class="flex items-center space-x-2">
+          <Select
+            bind:value={selectedMetric}
+            options={metricOptions}
+            on:change={handleMetricChange}
+          />
+          <Select
+            bind:value={selectedChartType}
+            options={chartTypeOptions}
+            on:change={handleChartTypeChange}
+          />
+        </div>
       </div>
-    </div>
+    {/snippet}
     
     {#if loading}
       <div class="flex items-center justify-center" style="height: {height}">

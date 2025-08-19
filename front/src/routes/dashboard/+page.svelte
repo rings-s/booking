@@ -1,11 +1,27 @@
 <!-- src/routes/dashboard/+page.svelte -->
 <script>
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import { goto } from '$app/navigation';
-    import { auth } from '$lib/stores/auth';
+    import { auth, isAuthenticated, canManageBusinesses } from '$lib/stores/auth';
+    import { 
+        dashboard, 
+        loading, 
+        error, 
+        activePeriod, 
+        statsData, 
+        revenueData, 
+        bookingChartData, 
+        serviceStats, 
+        recentActivity,
+        popularServices,
+        customerMetrics,
+        bookingTrends,
+        revenueTrends,
+        initDashboard,
+        changeDashboardPeriod,
+        clearDashboard
+    } from '$lib/stores/dashboard';
     import { businessAPI } from '$lib/api/businesses';
-    import { bookingAPI } from '$lib/api/bookings';
-    import { customerAPI } from '$lib/api/customers';
     import StatsCard from '$lib/components/dashboard/StatsCard.svelte';
     import RevenueChart from '$lib/components/dashboard/RevenueChart.svelte';
     import BookingChart from '$lib/components/dashboard/BookingChart.svelte';
@@ -14,107 +30,118 @@
     import RecentActivity from '$lib/components/dashboard/RecentActivity.svelte';
     import Button from '$lib/components/common/Button.svelte';
     import Select from '$lib/components/common/Select.svelte';
+    import { t } from '$lib/stores/i18n.js';
     import toast from 'svelte-french-toast';
     
-    let loading = true;
-    let selectedPeriod = 'month';
     let selectedBusiness = null;
     let businesses = [];
     
-    // Dashboard data
-    let stats = {
-      revenue: 0,
-      bookings: 0,
-      customers: 0,
-      rating: 0,
-      revenueChange: 0,
-      bookingsChange: 0,
-      customersChange: 0,
-      ratingChange: 0
-    };
-    
-    let revenueData = [];
-    let bookingData = [];
-    let serviceData = [];
-    let customerData = {};
-    let activities = [];
-    
-    const periodOptions = [
-      { value: 'week', label: 'This Week' },
-      { value: 'month', label: 'This Month' },
-      { value: 'quarter', label: 'This Quarter' },
-      { value: 'year', label: 'This Year' }
+    $: periodOptions = [
+      { value: 'week', label: $t('time.this_week') },
+      { value: 'month', label: $t('time.this_month') },
+      { value: 'quarter', label: $t('time.this_quarter') },
+      { value: 'year', label: $t('time.this_year') }
     ];
     
     onMount(async () => {
-      await loadBusinesses();
-      await loadDashboardData();
+      // Wait for auth to be initialized
+      if ($auth.isLoading) {
+        const unsubscribe = auth.subscribe((authState) => {
+          if (!authState.isLoading) {
+            unsubscribe();
+            checkAuthAndLoadData();
+          }
+        });
+      } else {
+        await checkAuthAndLoadData();
+      }
+    });
+
+    onDestroy(() => {
+      // Clear dashboard data on component destruction
+      clearDashboard();
     });
     
+    async function checkAuthAndLoadData() {
+      // Redirect to login if not authenticated
+      if (!$isAuthenticated) {
+        toast.error($t('auth.please_sign_in_dashboard'));
+        goto('/auth/login');
+        return;
+      }
+      
+      // Check if user can manage businesses (business owner, staff, or superuser)
+      if (!$canManageBusinesses) {
+        console.log('Access check failed:', {
+          user: $auth.user,
+          isAuthenticated: $isAuthenticated,
+          canManageBusinesses: $canManageBusinesses,
+          isStaff: $auth.user?.is_staff,
+          isSuperuser: $auth.user?.is_superuser,
+          userType: $auth.user?.user_type
+        });
+        toast.error($t('auth.access_denied_business_permissions'));
+        goto('/');
+        return;
+      }
+      
+      await loadBusinesses();
+      
+      if (selectedBusiness) {
+        console.log('Dashboard: Initial data load for business:', selectedBusiness);
+        await initDashboard(selectedBusiness);
+        console.log('Dashboard: Initial data loaded, checking chart data:', {
+          bookingTrendsDaily: $bookingTrends.daily?.length,
+          revenueTrendsMonthly: $revenueTrends.monthly?.length, 
+          popularServicesCount: $popularServices?.length,
+          loading: $loading
+        });
+      }
+    }
+    
     async function loadBusinesses() {
+      // Load businesses owned by the current user (regardless of admin status)
+      // Dashboard is for managing your own businesses, not all businesses in the system
       const { data, error } = await businessAPI.getMyBusinesses();
-      if (data && Array.isArray(data) && data.length > 0) {
-        businesses = data;
-        selectedBusiness = businessAPI.getBusinessIdentifier(data[0]); // Use slug for API calls
+      
+      if (data) {
+        // getMyBusinesses returns an array directly
+        businesses = Array.isArray(data) ? data : (data.results || []);
+        
+        if (businesses.length > 0) {
+          selectedBusiness = businessAPI.getBusinessIdentifier(businesses[0]); // Use slug for API calls
+        } else {
+          selectedBusiness = null;
+        }
       } else {
         businesses = [];
         selectedBusiness = null;
         if (error) {
           console.error('Failed to load businesses:', error);
-          toast.error('Failed to load businesses. Please check your login status.');
+          toast.error($t('error.failed_load_businesses'));
         }
       }
     }
     
-    async function loadDashboardData() {
-      if (!selectedBusiness) {
-        loading = false;
-        return;
+    async function handlePeriodChange() {
+      await changeDashboardPeriod($activePeriod);
+    }
+    
+    async function handleBusinessChange() {
+      if (selectedBusiness) {
+        console.log('Dashboard: Loading data for business:', selectedBusiness);
+        await initDashboard(selectedBusiness);
+        console.log('Dashboard: Data loaded, store values:', {
+          bookingTrends: $bookingTrends,
+          revenueTrends: $revenueTrends,
+          popularServices: $popularServices,
+          loading: $loading
+        });
       }
-      
-      loading = true;
-      
-      // Load all dashboard data in parallel
-      const [statsRes, revenueRes, bookingsRes, servicesRes, customersRes, activitiesRes] = await Promise.all([
-        businessAPI.getStats(selectedBusiness, selectedPeriod),
-        businessAPI.getRevenueData(selectedBusiness, selectedPeriod),
-        bookingAPI.getChartData(selectedBusiness, selectedPeriod),
-        businessAPI.getServiceStats(selectedBusiness),
-        customerAPI.getAnalytics(selectedBusiness),
-        businessAPI.getRecentActivity(selectedBusiness)
-      ]);
-      
-      if (statsRes.data) stats = statsRes.data;
-      else console.error('Stats failed:', statsRes.error);
-      
-      if (revenueRes.data) revenueData = revenueRes.data;
-      else console.error('Revenue failed:', revenueRes.error);
-      
-      if (bookingsRes.data) bookingData = bookingsRes.data;
-      else console.error('Bookings failed:', bookingsRes.error);
-      
-      if (servicesRes.data) serviceData = servicesRes.data;
-      else console.error('Services failed:', servicesRes.error);
-      
-      if (customersRes.data) customerData = customersRes.data;
-      else console.error('Customers failed:', customersRes.error);
-      
-      if (activitiesRes.data) activities = activitiesRes.data;
-      else console.error('Activities failed:', activitiesRes.error);
-      
-      loading = false;
-    }
-    
-    function handlePeriodChange() {
-      loadDashboardData();
-    }
-    
-    function handleBusinessChange() {
-      loadDashboardData();
     }
     
     function exportData() {
-      toast.success('Exporting dashboard data...');
+      toast.success($t('dashboard.exporting_data'));
       // Implement export functionality
     }
   </script>
@@ -125,9 +152,9 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="py-6 flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <h1 class="text-2xl font-bold text-gray-900">{$t('navigation.dashboard')}</h1>
             <p class="mt-1 text-sm text-gray-600">
-              Welcome back, {$auth.user?.full_name || 'User'}! Here's your business overview.
+              {$t('dashboard.welcome_back', { name: $auth.user?.full_name || $t('common.user') })}
             </p>
           </div>
           
@@ -141,7 +168,7 @@
             {/if}
             
             <Select
-              bind:value={selectedPeriod}
+              bind:value={$activePeriod}
               on:change={handlePeriodChange}
               options={periodOptions}
             />
@@ -150,7 +177,7 @@
               <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              Export
+              {$t('common.export')}
             </Button>
           </div>
         </div>
@@ -161,76 +188,76 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatsCard
-          title="Total Revenue"
-          value={stats.revenue}
-          change={stats.revenueChange}
-          changeType={stats.revenueChange >= 0 ? 'increase' : 'decrease'}
+          title={$t('dashboard.total_revenue')}
+          value={$statsData.revenue}
+          change={$statsData.revenueChange}
+          changeType={$statsData.revenueChange >= 0 ? 'increase' : 'decrease'}
           format="currency"
           icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
           color="green"
-          {loading}
+          loading={$loading}
         />
         
         <StatsCard
-          title="Total Bookings"
-          value={stats.bookings}
-          change={stats.bookingsChange}
-          changeType={stats.bookingsChange >= 0 ? 'increase' : 'decrease'}
+          title={$t('dashboard.total_bookings')}
+          value={$statsData.bookings}
+          change={$statsData.bookingsChange}
+          changeType={$statsData.bookingsChange >= 0 ? 'increase' : 'decrease'}
           icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
           color="blue"
-          {loading}
+          loading={$loading}
         />
         
         <StatsCard
-          title="Active Customers"
-          value={stats.customers}
-          change={stats.customersChange}
-          changeType={stats.customersChange >= 0 ? 'increase' : 'decrease'}
+          title={$t('dashboard.active_customers')}
+          value={$statsData.customers}
+          change={$statsData.customersChange}
+          changeType={$statsData.customersChange >= 0 ? 'increase' : 'decrease'}
           icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
           color="purple"
-          {loading}
+          loading={$loading}
         />
         
         <StatsCard
-          title="Average Rating"
-          value={stats.rating}
-          change={stats.ratingChange}
-          changeType={stats.ratingChange >= 0 ? 'increase' : 'decrease'}
+          title={$t('dashboard.average_rating')}
+          value={$statsData.rating}
+          change={$statsData.ratingChange}
+          changeType={$statsData.ratingChange >= 0 ? 'increase' : 'decrease'}
           format="decimal"
           icon="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
           color="yellow"
-          {loading}
+          loading={$loading}
         />
       </div>
       
       <!-- Charts Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <RevenueChart
-          data={revenueData}
-          {loading}
-          period={selectedPeriod}
+          data={$revenueTrends.monthly}
+          loading={$loading}
+          period={$activePeriod}
         />
         
         <BookingChart
-          data={bookingData}
-          {loading}
+          data={$bookingTrends.daily}
+          loading={$loading}
         />
         
         <ServiceChart
-          data={serviceData}
-          {loading}
+          data={$popularServices}
+          loading={$loading}
         />
         
         <CustomerChart
-          data={customerData}
-          {loading}
+          data={$customerMetrics}
+          loading={$loading}
         />
       </div>
       
       <!-- Recent Activity -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2">
-          {#if businesses.length === 0 && !loading}
+          {#if businesses.length === 0 && !$loading}
             <!-- No Business Welcome Message -->
             <div class="bg-white rounded-lg shadow-sm p-8 text-center">
               <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-indigo-100 mb-4">
@@ -238,51 +265,78 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-2m-2 0h-2m-2 0h-2M3 5a2 2 0 012-2h10a2 2 0 012 2v16M9 7h1m-1 4h1m-1 4h1m-1 4h1" />
                 </svg>
               </div>
-              <h3 class="text-lg font-semibold text-gray-900 mb-2">Welcome to Your Dashboard!</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                {#if $auth.user?.is_staff || $auth.user?.is_superuser}
+                  {$t('dashboard.admin_dashboard')}
+                {:else}
+                  {$t('dashboard.welcome_to_dashboard')}
+                {/if}
+              </h3>
               <p class="text-gray-600 mb-6">
-                Get started by creating your first business profile to begin accepting bookings and managing your services.
+                {#if $auth.user?.is_staff || $auth.user?.is_superuser}
+                  {$t('dashboard.no_businesses_admin')}
+                {:else}
+                  {$t('dashboard.get_started_message')}
+                {/if}
               </p>
               <Button on:click={() => goto('/businesses/new')}>
                 <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                Create Your First Business
+                {#if $auth.user?.is_staff || $auth.user?.is_superuser}
+                  {$t('business.create_new_business')}
+                {:else}
+                  {$t('business.create_first_business')}
+                {/if}
               </Button>
             </div>
           {:else}
             <RecentActivity
-              {activities}
-              {loading}
+              activities={$recentActivity}
+              loading={$loading}
             />
           {/if}
         </div>
         
         <!-- Quick Actions -->
         <div class="bg-white rounded-lg shadow-sm p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-          {#if businesses.length === 0 && !loading}
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">{$t('dashboard.quick_actions')}</h3>
+          {#if businesses.length === 0 && !$loading}
             <!-- No Business Quick Actions -->
             <div class="space-y-3">
               <Button fullWidth on:click={() => goto('/businesses/new')}>
                 <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-2m-2 0h-2m-2 0h-2M3 5a2 2 0 012-2h10a2 2 0 012 2v16M9 7h1m-1 4h1m-1 4h1m-1 4h1" />
                 </svg>
-                Create Business
+                {#if $auth.user?.is_staff || $auth.user?.is_superuser}
+                  {$t('business.create_new_business')}
+                {:else}
+                  {$t('business.create_business')}
+                {/if}
               </Button>
               
               <Button fullWidth variant="outline" on:click={() => goto('/businesses')}>
                 <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                Browse Businesses
+                {$t('business.browse_businesses')}
               </Button>
               
-              <Button fullWidth variant="outline" on:click={() => goto('/subscriptions')}>
-                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                View Pricing Plans
-              </Button>
+              {#if !($auth.user?.is_staff || $auth.user?.is_superuser)}
+                <Button fullWidth variant="outline" on:click={() => goto('/subscriptions')}>
+                  <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {$t('subscription.view_pricing_plans')}
+                </Button>
+              {:else}
+                <Button fullWidth variant="outline" on:click={() => goto('/customers')}>
+                  <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  {$t('customer.manage_customers')}
+                </Button>
+              {/if}
             </div>
           {:else}
             <!-- Regular Quick Actions -->
@@ -291,10 +345,10 @@
               <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
-              New Booking
+              {$t('booking.new_booking')}
             </Button>
             
-            {#if selectedBusiness && businesses.find(b => b.id === selectedBusiness)}
+            {#if selectedBusiness && businesses.find(b => businessAPI.getBusinessIdentifier(b) === selectedBusiness)}
               <Button fullWidth variant="outline" on:click={() => {
                 const business = businesses.find(b => businessAPI.getBusinessIdentifier(b) === selectedBusiness);
                 if (business) {
@@ -341,7 +395,7 @@
               View Customers
             </Button>
             
-            {#if selectedBusiness && businesses.find(b => b.id === selectedBusiness)}
+            {#if selectedBusiness && businesses.find(b => businessAPI.getBusinessIdentifier(b) === selectedBusiness)}
               <Button fullWidth variant="outline" on:click={() => {
                 const business = businesses.find(b => businessAPI.getBusinessIdentifier(b) === selectedBusiness);
                 if (business) {

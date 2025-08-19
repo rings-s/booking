@@ -5,11 +5,14 @@
     import Button from '../common/Button.svelte';
     import { goto } from '$app/navigation';
     
-    export let plan;
-    export let currentPlan = false;
-    export let recommended = false;
-    export let loading = false;
-    export let compact = false;
+    let {
+        plan,
+        currentPlan = false,
+        recommended = false,
+        loading = false,
+        compact = false,
+        ...restProps
+    } = $props();
     
     const dispatch = createEventDispatcher();
     
@@ -67,15 +70,15 @@
     ];
     
     // Badge text based on plan type
-    $: badgeText = plan.name === 'free' ? 'Free Forever' :
+    let badgeText = $derived(plan.name === 'free' ? 'Free Forever' :
                    plan.name === 'basic' ? 'Most Popular' :
                    plan.name === 'premium' ? 'Best Value' :
-                   plan.name === 'enterprise' ? 'Custom Solution' : '';
+                   plan.name === 'enterprise' ? 'Custom Solution' : '');
     
-    $: planColor = plan.name === 'free' ? 'gray' :
+    let planColor = $derived(plan.name === 'free' ? 'gray' :
                    plan.name === 'basic' ? 'blue' :
                    plan.name === 'premium' ? 'indigo' :
-                   plan.name === 'enterprise' ? 'purple' : 'gray';
+                   plan.name === 'enterprise' ? 'purple' : 'gray');
   </script>
   
   <div class="

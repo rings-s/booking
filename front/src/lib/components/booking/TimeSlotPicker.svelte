@@ -1,17 +1,18 @@
 <!-- src/lib/components/booking/TimeSlotPicker.svelte -->
 <script>
-    import { createEventDispatcher } from 'svelte';
     import { formatTime } from '$lib/utils/formatters';
     
-    export let slots = [];
-    export let selectedSlot = null;
-    export let loading = false;
-    
-    const dispatch = createEventDispatcher();
+    let {
+        slots = [],
+        selectedSlot = $bindable(null),
+        loading = false,
+        onselect = () => {},
+        ...restProps
+    } = $props();
     
     function selectSlot(slot) {
       selectedSlot = slot;
-      dispatch('select', slot);
+      onselect(slot);
     }
   </script>
   

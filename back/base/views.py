@@ -1,16 +1,29 @@
 # base/views.py
-from rest_framework import viewsets, status, filters
+from rest_framework import viewsets, status, filters, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.exceptions import PermissionDenied  # FIX: Added missing import
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count, Sum, Avg, Q, F, Min, Max
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from datetime import datetime, timedelta, date
-import plotly.graph_objs as go
-import plotly.io as pio
-import pandas as pd
+
+# Make pandas optional for now
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    PANDAS_AVAILABLE = False
+
+# Make plotly imports optional to avoid dependency issues
+try:
+    import plotly.graph_objs as go
+    import plotly.io as pio
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
 
 from .models import (
     Business, BusinessHours, Service, Customer,
@@ -68,8 +81,8 @@ class BusinessViewSet(viewsets.ModelViewSet):
         """
         business = self.get_object()
         
-        # Verify ownership
-        if business.owner != request.user:
+        # Verify ownership or admin access
+        if business.owner != request.user and not request.user.is_staff:
             return Response(
                 {'error': 'You do not have permission to view this dashboard'},
                 status=status.HTTP_403_FORBIDDEN
@@ -184,7 +197,7 @@ class BusinessViewSet(viewsets.ModelViewSet):
         """Get bookings grouped by date"""
         data = bookings.values('booking_date').annotate(
             count=Count('id'),
-            revenue=Sum('total_price', filter=Q(is_paid=True))
+            revenue=Sum('total_price', filter=Q(is_paid=True, status__in=['confirmed', 'completed']))
         ).order_by('booking_date')
         
         return [
@@ -208,7 +221,8 @@ class BusinessViewSet(viewsets.ModelViewSet):
             revenue = Booking.objects.filter(
                 business=business,
                 booking_date__range=[month_start, month_end],
-                is_paid=True
+                is_paid=True,
+                status__in=['confirmed', 'completed']
             ).aggregate(Sum('total_price'))['total_price__sum'] or 0
             
             months_data.append({
@@ -326,11 +340,11 @@ class BusinessViewSet(viewsets.ModelViewSet):
             bookings__booking_date__gte=start_date
         ).annotate(
             booking_count=Count('bookings'),
-            total_spent=Sum(
+            calculated_spent=Sum(
                 'bookings__total_price',
                 filter=Q(bookings__is_paid=True)
             )
-        ).order_by('-total_spent')[:10]
+        ).order_by('-calculated_spent')[:10]
         
         return [
             {
@@ -338,7 +352,7 @@ class BusinessViewSet(viewsets.ModelViewSet):
                 'name': customer.user.full_name,
                 'email': customer.user.email,
                 'bookings': customer.booking_count,
-                'total_spent': float(customer.total_spent or 0)
+                'total_spent': float(customer.calculated_spent or 0)
             }
             for customer in customers
         ]
@@ -399,6 +413,12 @@ class BusinessViewSet(viewsets.ModelViewSet):
         """
         Generate interactive Plotly charts for business analytics
         """
+        if not PLOTLY_AVAILABLE:
+            return Response(
+                {'error': 'Plotly is not installed. Please install plotly to use charts.'},
+                status=status.HTTP_501_NOT_IMPLEMENTED
+            )
+            
         business = self.get_object()
         chart_type = request.query_params.get('type', 'bookings')
         period = request.query_params.get('period', '30')
@@ -655,6 +675,7 @@ class BusinessViewSet(viewsets.ModelViewSet):
             'total_dates': len(available_dates)
         })
     
+    # FIX: Removed duplicate stats method - keeping only one
     @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
     def stats(self, request, slug=None):
         """Get business statistics"""
@@ -683,12 +704,33 @@ class BusinessViewSet(viewsets.ModelViewSet):
         
         # Get stats
         bookings = Booking.objects.filter(business=business, created_at__gte=start_date)
-        total_revenue = bookings.filter(status='confirmed').aggregate(Sum('total_price'))['total_price__sum'] or 0
+        total_revenue = bookings.filter(status__in=['confirmed', 'completed'], is_paid=True).aggregate(Sum('total_price'))['total_price__sum'] or 0
         total_bookings = bookings.count()
-        confirmed_bookings = bookings.filter(status='confirmed').count()
+        confirmed_bookings = bookings.filter(status__in=['confirmed', 'completed']).count()
         customers = Customer.objects.filter(bookings__business=business).distinct().count()
         reviews = Review.objects.filter(business=business)
         avg_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
+        
+        # Calculate changes from previous period
+        prev_start = start_date - (now - start_date)
+        prev_bookings = Booking.objects.filter(
+            business=business,
+            created_at__gte=prev_start,
+            created_at__lt=start_date
+        )
+        
+        prev_revenue = prev_bookings.filter(status__in=['confirmed', 'completed'], is_paid=True).aggregate(Sum('total_price'))['total_price__sum'] or 0
+        prev_bookings_count = prev_bookings.count()
+        prev_customers = Customer.objects.filter(
+            bookings__business=business,
+            bookings__created_at__gte=prev_start,
+            bookings__created_at__lt=start_date
+        ).distinct().count()
+        
+        # Calculate percentage changes
+        revenue_change = ((float(total_revenue) - float(prev_revenue)) / max(float(prev_revenue), 1)) * 100 if prev_revenue else 0
+        bookings_change = ((total_bookings - prev_bookings_count) / max(prev_bookings_count, 1)) * 100 if prev_bookings_count else 0
+        customers_change = ((customers - prev_customers) / max(prev_customers, 1)) * 100 if prev_customers else 0
         
         return Response({
             'revenue': float(total_revenue),
@@ -696,12 +738,13 @@ class BusinessViewSet(viewsets.ModelViewSet):
             'confirmed_bookings': confirmed_bookings,
             'customers': customers,
             'rating': round(avg_rating, 1),
-            'revenueChange': 0,  # TODO: Calculate change from previous period
-            'bookingsChange': 0,  # TODO: Calculate change from previous period
-            'customersChange': 0,  # TODO: Calculate change from previous period
-            'ratingChange': 0  # TODO: Calculate change from previous period
+            'revenueChange': round(revenue_change, 1),
+            'bookingsChange': round(bookings_change, 1),
+            'customersChange': round(customers_change, 1),
+            'ratingChange': 0  # Would need historical rating data
         })
     
+    # FIX: Removed duplicate revenue_data method - keeping the one with better implementation
     @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
     def revenue_data(self, request, slug=None):
         """Get revenue data for charts"""
@@ -733,7 +776,8 @@ class BusinessViewSet(viewsets.ModelViewSet):
             daily_revenue = Booking.objects.filter(
                 business=business,
                 booking_date=current_date,
-                status='confirmed'
+                status__in=['confirmed', 'completed'],
+                is_paid=True
             ).aggregate(Sum('total_price'))['total_price__sum'] or 0
             
             revenue_data.append({
@@ -744,6 +788,7 @@ class BusinessViewSet(viewsets.ModelViewSet):
         
         return Response(revenue_data)
     
+    # FIX: Removed duplicate service_stats method - keeping one implementation
     @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
     def service_stats(self, request, slug=None):
         """Get service statistics"""
@@ -758,11 +803,12 @@ class BusinessViewSet(viewsets.ModelViewSet):
         
         services_data = Service.objects.filter(business=business).annotate(
             booking_count=Count('bookings'),
-            total_revenue=Sum('bookings__total_price', filter=Q(bookings__status='confirmed'))
+            total_revenue=Sum('bookings__total_price', filter=Q(bookings__status__in=['confirmed', 'completed'], bookings__is_paid=True))
         ).values('name', 'booking_count', 'total_revenue', 'price')
         
         return Response(list(services_data))
     
+    # FIX: Removed duplicate recent_activity method - keeping one implementation
     @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
     def recent_activity(self, request, slug=None):
         """Get recent business activity"""
@@ -788,7 +834,29 @@ class BusinessViewSet(viewsets.ModelViewSet):
                 'status': booking.status
             })
         
-        return Response(activities)
+        # Get recent reviews
+        recent_reviews = Review.objects.filter(
+            business=business
+        ).select_related('customer__user').order_by('-created_at')[:5]
+        
+        for review in recent_reviews:
+            customer_name = f"{review.customer.user.first_name} {review.customer.user.last_name}".strip()
+            if not customer_name:
+                customer_name = review.customer.user.email or "Unknown Customer"
+            
+            activities.append({
+                'id': str(review.id),
+                'type': 'review',
+                'title': f'New {review.rating}-star review',
+                'description': f'{customer_name} left a review',
+                'date': review.created_at.isoformat(),
+                'rating': review.rating
+            })
+        
+        # Sort by date
+        activities.sort(key=lambda x: x['date'], reverse=True)
+        
+        return Response(activities[:15])
     
     @action(detail=True, methods=['post'])
     def update_hours(self, request, slug=None):
@@ -797,7 +865,7 @@ class BusinessViewSet(viewsets.ModelViewSet):
         """
         business = self.get_object()
         
-        if business.owner != request.user:
+        if business.owner != request.user and not request.user.is_staff:
             return Response(
                 {'error': 'You do not have permission to update business hours'},
                 status=status.HTTP_403_FORBIDDEN
@@ -881,17 +949,17 @@ class BusinessViewSet(viewsets.ModelViewSet):
             current_time = now.time()
             current_weekday = now.weekday()
             
+            # FIX: Changed field name from business_hours to hours
             queryset = queryset.filter(
-                business_hours__weekday=current_weekday,
-                business_hours__is_closed=False,
-                business_hours__opening_time__lte=current_time,
-                business_hours__closing_time__gte=current_time
+                hours__weekday=current_weekday,
+                hours__is_closed=False,
+                hours__opening_time__lte=current_time,
+                hours__closing_time__gte=current_time
             ).distinct()
         
-        # Has offers filter
-        has_offers = request.query_params.get('hasOffers')
-        if has_offers == 'true':
-            queryset = queryset.filter(services__has_discount=True).distinct()
+        # Has offers filter - FIX: Removed non-existent field
+        # has_offers = request.query_params.get('hasOffers')
+        # Services don't have a has_discount field in the model
         
         # Sorting
         sort_by = request.query_params.get('sort_by', 'relevance')
@@ -908,20 +976,12 @@ class BusinessViewSet(viewsets.ModelViewSet):
             queryset = queryset.annotate(max_price=Max('services__price')).order_by('-max_price')
         else:  # relevance
             if search:
-                # Order by relevance (name matches first, then description)
-                queryset = queryset.extra(
-                    select={
-                        'relevance': """
-                            CASE 
-                                WHEN name ILIKE %s THEN 1
-                                WHEN description ILIKE %s THEN 2
-                                WHEN category ILIKE %s THEN 3
-                                ELSE 4
-                            END
-                        """
-                    },
-                    select_params=[f'%{search}%', f'%{search}%', f'%{search}%']
-                ).order_by('relevance', '-created_at')
+                # FIX: Use annotate instead of extra for better compatibility
+                queryset = queryset.annotate(
+                    name_match=Count('id', filter=Q(name__icontains=search)),
+                    desc_match=Count('id', filter=Q(description__icontains=search)),
+                    cat_match=Count('id', filter=Q(category__icontains=search))
+                ).order_by('-name_match', '-desc_match', '-cat_match', '-created_at')
             else:
                 queryset = queryset.order_by('-created_at')
         
@@ -957,7 +1017,7 @@ class BusinessViewSet(viewsets.ModelViewSet):
         """
         business = self.get_object()
         
-        if business.owner != request.user:
+        if business.owner != request.user and not request.user.is_staff:
             return Response(
                 {'error': 'You do not have permission to view revenue reports'},
                 status=status.HTTP_403_FORBIDDEN
@@ -1030,227 +1090,6 @@ class BusinessViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(businesses, many=True)
         return Response(serializer.data)
-    
-    @action(detail=True, methods=['get'])
-    def stats(self, request, slug=None):
-        """
-        Get business statistics
-        """
-        business = self.get_object()
-        
-        # Verify ownership or admin access
-        if business.owner != request.user and not request.user.is_staff:
-            return Response(
-                {'error': 'You do not have permission to view these statistics'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        period = request.query_params.get('period', 'month')
-        
-        # Calculate date range based on period
-        today = timezone.now().date()
-        if period == 'week':
-            start_date = today - timedelta(days=7)
-        elif period == 'month':
-            start_date = today - timedelta(days=30)
-        elif period == 'quarter':
-            start_date = today - timedelta(days=90)
-        elif period == 'year':
-            start_date = today - timedelta(days=365)
-        else:
-            start_date = today - timedelta(days=30)
-        
-        # Get bookings for the period
-        bookings = Booking.objects.filter(
-            business=business,
-            booking_date__gte=start_date
-        )
-        
-        # Calculate statistics
-        total_bookings = bookings.count()
-        total_revenue = float(bookings.filter(is_paid=True).aggregate(
-            total=Sum('total_price')
-        )['total'] or 0)
-        
-        # Active customers (unique customers who booked in period)
-        active_customers = bookings.values('customer').distinct().count()
-        
-        # Average rating
-        avg_rating = float(business.reviews.aggregate(
-            avg=Avg('rating')
-        )['avg'] or 0)
-        
-        # Calculate changes (compare with previous period)
-        prev_start = start_date - (today - start_date)
-        prev_bookings = Booking.objects.filter(
-            business=business,
-            booking_date__gte=prev_start,
-            booking_date__lt=start_date
-        )
-        
-        prev_total_bookings = prev_bookings.count()
-        prev_total_revenue = float(prev_bookings.filter(is_paid=True).aggregate(
-            total=Sum('total_price')
-        )['total'] or 0)
-        prev_active_customers = prev_bookings.values('customer').distinct().count()
-        
-        # Calculate percentage changes
-        bookings_change = ((total_bookings - prev_total_bookings) / max(prev_total_bookings, 1)) * 100
-        revenue_change = ((total_revenue - prev_total_revenue) / max(prev_total_revenue, 1)) * 100
-        customers_change = ((active_customers - prev_active_customers) / max(prev_active_customers, 1)) * 100
-        
-        return Response({
-            'revenue': total_revenue,
-            'bookings': total_bookings,
-            'customers': active_customers,
-            'rating': avg_rating,
-            'revenueChange': round(revenue_change, 1),
-            'bookingsChange': round(bookings_change, 1),
-            'customersChange': round(customers_change, 1),
-            'ratingChange': 0,  # Would need historical rating data
-        })
-    
-    @action(detail=True, methods=['get'])
-    def revenue_data(self, request, slug=None):
-        """
-        Get revenue data for charts
-        """
-        business = self.get_object()
-        
-        # Verify ownership or admin access
-        if business.owner != request.user and not request.user.is_staff:
-            return Response(
-                {'error': 'You do not have permission to view this data'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        period = request.query_params.get('period', 'month')
-        
-        # Generate revenue data for the last 12 periods
-        revenue_data = []
-        today = timezone.now().date()
-        
-        for i in range(12):
-            if period == 'month':
-                end_date = today.replace(day=1) - timedelta(days=i*30)
-                start_date = end_date - timedelta(days=30)
-                label = end_date.strftime('%b %Y')
-            elif period == 'quarter':
-                end_date = today - timedelta(days=i*90)
-                start_date = end_date - timedelta(days=90)
-                label = f'Q{((end_date.month - 1) // 3) + 1} {end_date.year}'
-            elif period == 'year':
-                end_date = today.replace(month=1, day=1) - timedelta(days=i*365)
-                start_date = end_date - timedelta(days=365)
-                label = end_date.strftime('%Y')
-            else:  # week
-                end_date = today - timedelta(days=i*7)
-                start_date = end_date - timedelta(days=7)
-                label = end_date.strftime('%b %d')
-            
-            revenue = Booking.objects.filter(
-                business=business,
-                booking_date__gte=start_date,
-                booking_date__lt=end_date,
-                is_paid=True
-            ).aggregate(Sum('total_price'))['total_price__sum'] or 0
-            
-            revenue_data.append({
-                'date': start_date.isoformat(),
-                'label': label,
-                'revenue': float(revenue)
-            })
-        
-        return Response(list(reversed(revenue_data)))
-    
-    @action(detail=True, methods=['get'])
-    def service_stats(self, request, slug=None):
-        """
-        Get service statistics
-        """
-        business = self.get_object()
-        
-        # Verify ownership or admin access
-        if business.owner != request.user and not request.user.is_staff:
-            return Response(
-                {'error': 'You do not have permission to view this data'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        # Get service statistics
-        services = Service.objects.filter(business=business, is_active=True).annotate(
-            booking_count=Count('bookings'),
-            total_revenue=Sum('bookings__total_price', filter=Q(bookings__is_paid=True))
-        ).order_by('-booking_count')
-        
-        service_data = []
-        for service in services:
-            service_data.append({
-                'name': service.name,
-                'bookings': service.booking_count,
-                'revenue': float(service.total_revenue or 0),
-                'price': float(service.price)
-            })
-        
-        return Response(service_data)
-    
-    @action(detail=True, methods=['get'])
-    def recent_activity(self, request, slug=None):
-        """
-        Get recent activity for the business
-        """
-        business = self.get_object()
-        
-        # Verify ownership or admin access
-        if business.owner != request.user and not request.user.is_staff:
-            return Response(
-                {'error': 'You do not have permission to view this data'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        # Get recent bookings
-        recent_bookings = Booking.objects.filter(
-            business=business
-        ).select_related('customer__user', 'service').order_by('-created_at')[:10]
-        
-        activities = []
-        for booking in recent_bookings:
-            customer_name = f"{booking.customer.user.first_name} {booking.customer.user.last_name}".strip()
-            if not customer_name:
-                customer_name = booking.customer.user.email or "Unknown Customer"
-            
-            activities.append({
-                'id': str(booking.id),
-                'type': 'booking',
-                'title': f'New booking for {booking.service.name}',
-                'description': f'{customer_name} booked {booking.service.name}',
-                'date': booking.created_at.isoformat(),
-                'status': booking.status
-            })
-        
-        # Get recent reviews
-        recent_reviews = Review.objects.filter(
-            business=business
-        ).select_related('customer__user').order_by('-created_at')[:5]
-        
-        for review in recent_reviews:
-            customer_name = f"{review.customer.user.first_name} {review.customer.user.last_name}".strip()
-            if not customer_name:
-                customer_name = review.customer.user.email or "Unknown Customer"
-            
-            activities.append({
-                'id': str(review.id),
-                'type': 'review',
-                'title': f'New {review.rating}-star review',
-                'description': f'{customer_name} left a review',
-                'date': review.created_at.isoformat(),
-                'rating': review.rating
-            })
-        
-        # Sort by date
-        activities.sort(key=lambda x: x['date'], reverse=True)
-        
-        return Response(activities[:15])
 
 
 class ServiceViewSet(viewsets.ModelViewSet):
@@ -1287,15 +1126,102 @@ class ServiceViewSet(viewsets.ModelViewSet):
         
         return queryset
     
-    def perform_create(self, serializer):
-        # Verify the user owns the business
-        business_id = self.request.data.get('business')
+    def create(self, request, *args, **kwargs):
+        """Override create to handle business association properly"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # Get business from validated data
+        business_id = serializer.validated_data.get('business')
+        if not business_id:
+            raise serializers.ValidationError("Business ID is required")
+            
         business = get_object_or_404(Business, id=business_id)
         
-        if business.owner != self.request.user:
-            raise PermissionDenied("You can only add services to your own business")
+        # Allow superusers to create services for any business
+        if not self.request.user.is_superuser:
+            # For non-superusers, verify they own the business
+            if business.owner != self.request.user:
+                raise PermissionDenied("You can only add services to your own business")
         
-        serializer.save()
+        # Remove business UUID from validated_data and save with business instance
+        serializer.validated_data.pop('business', None)
+        service = serializer.save(business=business)
+        
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
+    @action(detail=False, methods=['post'])
+    def bulk_update(self, request):
+        """
+        Bulk update multiple services
+        """
+        updates = request.data.get('updates', [])
+        if not updates:
+            return Response({'error': 'No updates provided'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        updated_services = []
+        errors = []
+        
+        for update_data in updates:
+            service_id = update_data.get('id')
+            if not service_id:
+                errors.append({'error': 'Service ID is required', 'data': update_data})
+                continue
+            
+            try:
+                service = Service.objects.get(id=service_id, business__owner=request.user)
+                
+                # Update allowed fields
+                allowed_fields = ['name', 'description', 'price', 'duration_minutes', 'is_active']
+                for field in allowed_fields:
+                    if field in update_data:
+                        setattr(service, field, update_data[field])
+                
+                service.save()
+                updated_services.append(service.id)
+            except Service.DoesNotExist:
+                errors.append({'error': f'Service with ID {service_id} not found or access denied'})
+        
+        return Response({
+            'updated': updated_services,
+            'errors': errors,
+            'message': f'{len(updated_services)} services updated successfully'
+        })
+    
+    @action(detail=False, methods=['post'])
+    def update_order(self, request):
+        """
+        Update the display order of services
+        """
+        updates = request.data.get('updates', [])
+        if not updates:
+            return Response({'error': 'No updates provided'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        updated_services = []
+        errors = []
+        
+        for update_data in updates:
+            service_id = update_data.get('id')
+            display_order = update_data.get('display_order')
+            
+            if not service_id or display_order is None:
+                errors.append({'error': 'Service ID and display_order are required', 'data': update_data})
+                continue
+            
+            try:
+                service = Service.objects.get(id=service_id, business__owner=request.user)
+                service.display_order = display_order
+                service.save(update_fields=['display_order'])
+                updated_services.append(service.id)
+            except Service.DoesNotExist:
+                errors.append({'error': f'Service with ID {service_id} not found or access denied'})
+        
+        return Response({
+            'updated': updated_services,
+            'errors': errors,
+            'message': f'{len(updated_services)} service orders updated successfully'
+        })
 
 
 class BookingViewSet(viewsets.ModelViewSet):
@@ -1347,7 +1273,8 @@ class BookingViewSet(viewsets.ModelViewSet):
         )
         
         # Calculate total price
-        service = serializer.validated_data['service']
+        service_id = self.request.data.get('service_id')
+        service = get_object_or_404(Service, id=service_id)
         total_price = service.price
         
         # Save booking
@@ -1364,9 +1291,10 @@ class BookingViewSet(viewsets.ModelViewSet):
         # Send notifications
         self._send_booking_notification(booking, 'created')
         
-        # Update customer stats
-        customer.total_bookings = F('total_bookings') + 1
-        customer.save()
+        # Update customer stats (fixed F expression usage)
+        Customer.objects.filter(id=customer.id).update(
+            total_bookings=F('total_bookings') + 1
+        )
     
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def chart_data(self, request):
@@ -1825,6 +1753,97 @@ class CustomerViewSet(viewsets.ModelViewSet):
             },
             'daily_acquisition': daily_customers,
             'top_customers': list(top_customers)
+        })
+    
+    @action(detail=True, methods=['post'])
+    def remove_preferred_business(self, request, pk=None):
+        """Remove a business from customer's preferred list"""
+        customer = self.get_object()
+        
+        if customer.user != request.user:
+            return Response(
+                {'error': 'You can only modify your own preferences'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        business_id = request.data.get('business_id')
+        try:
+            business = Business.objects.get(id=business_id)
+            customer.preferred_businesses.remove(business)
+            return Response({'status': 'Business removed from favorites'})
+        except Business.DoesNotExist:
+            return Response(
+                {'error': 'Business not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+    
+    @action(detail=True, methods=['get'])
+    def booking_history(self, request, pk=None):
+        """Get customer's booking history"""
+        customer = self.get_object()
+        
+        if customer.user != request.user and request.user.user_type != 'admin':
+            return Response(
+                {'error': 'You can only view your own booking history'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        bookings = customer.bookings.all().order_by('-created_at')
+        
+        # Apply filters
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            bookings = bookings.filter(status=status_filter)
+        
+        business_filter = request.query_params.get('business')
+        if business_filter:
+            bookings = bookings.filter(business_id=business_filter)
+        
+        # Pagination
+        page = self.paginate_queryset(bookings)
+        if page is not None:
+            from .serializers import BookingSerializer
+            serializer = BookingSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        from .serializers import BookingSerializer
+        serializer = BookingSerializer(bookings, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def stats(self, request, pk=None):
+        """Get customer statistics"""
+        customer = self.get_object()
+        
+        if customer.user != request.user and request.user.user_type != 'admin':
+            return Response(
+                {'error': 'You can only view your own statistics'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Calculate stats
+        total_bookings = customer.bookings.count()
+        completed_bookings = customer.bookings.filter(status='completed').count()
+        cancelled_bookings = customer.bookings.filter(status='cancelled').count()
+        total_spent = customer.bookings.filter(status='completed').aggregate(
+            total=models.Sum('total_amount')
+        )['total'] or 0
+        
+        favorite_businesses_count = customer.preferred_businesses.count()
+        
+        # Recent activity
+        recent_bookings = customer.bookings.order_by('-created_at')[:5]
+        from .serializers import BookingSerializer
+        recent_bookings_data = BookingSerializer(recent_bookings, many=True).data
+        
+        return Response({
+            'total_bookings': total_bookings,
+            'completed_bookings': completed_bookings,
+            'cancelled_bookings': cancelled_bookings,
+            'total_spent': float(total_spent),
+            'favorite_businesses_count': favorite_businesses_count,
+            'completion_rate': round((completed_bookings / total_bookings * 100) if total_bookings > 0 else 0, 2),
+            'recent_bookings': recent_bookings_data
         })
 
 

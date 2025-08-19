@@ -80,6 +80,20 @@ function createAuthStore() {
         isAuthenticated: !!user,
         isLoading: false
       });
+    },
+
+    // Initialize auth store with user data (used by SvelteKit load functions)
+    initWithUser(user) {
+      set({
+        user,
+        isAuthenticated: !!user,
+        isLoading: false
+      });
+    },
+
+    // Set loading state without fetching
+    setLoading(loading) {
+      update(state => ({ ...state, isLoading: loading }));
     }
   };
 }

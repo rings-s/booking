@@ -1,10 +1,16 @@
 <!-- src/lib/components/common/Card.svelte -->
 <script>
-    export let title = '';
-    export let subtitle = '';
-    export let shadow = 'md';
-    export let padding = 'md';
-    export let hoverable = false;
+    let {
+        title = '',
+        subtitle = '',
+        shadow = 'md',
+        padding = 'md',
+        hoverable = false,
+        children,
+        header,
+        footer,
+        ...restProps
+    } = $props();
     
     const shadows = {
       none: '',
@@ -32,10 +38,10 @@
     on:click
     on:keydown
   >
-    {#if title || subtitle || $$slots.header}
+    {#if title || subtitle || header}
       <div class="mb-4">
-        {#if $$slots.header}
-          <slot name="header" />
+        {#if header}
+          {@render header()}
         {:else}
           {#if title}
             <h3 class="text-lg font-semibold text-gray-900">{title}</h3>
@@ -48,12 +54,12 @@
     {/if}
     
     <div>
-      <slot />
+      {@render children?.()}
     </div>
     
-    {#if $$slots.footer}
+    {#if footer}
       <div class="mt-4 pt-4 border-t border-gray-200">
-        <slot name="footer" />
+        {@render footer()}
       </div>
     {/if}
   </div>

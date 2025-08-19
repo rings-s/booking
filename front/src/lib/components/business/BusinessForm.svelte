@@ -1,18 +1,20 @@
 <!-- src/lib/components/business/BusinessForm.svelte -->
 <script>
-  import { createEventDispatcher } from 'svelte';
   import Input from '../common/Input.svelte';
   import Select from '../common/Select.svelte';
   import Button from '../common/Button.svelte';
   import { validateForm, businessSchema } from '$lib/utils/validators';
   import { BUSINESS_CATEGORIES } from '$lib/utils/constants';
   
-  export let business = {};
-  export let loading = false;
+  let {
+    business = {},
+    loading = false,
+    onsubmit = () => {},
+    oncancel = () => {},
+    ...restProps
+  } = $props();
   
-  const dispatch = createEventDispatcher();
-  
-  let formData = {
+  let formData = $state({
     name: business.name || '',
     email: business.email || '',
     phone: business.phone || '',
@@ -28,15 +30,15 @@
     auto_confirm_bookings: business.auto_confirm_bookings ?? false,
     logo: null,
     cover_image: null
-  };
+  });
   
   // Image previews
-  let logoPreview = business.logo || null;
-  let coverPreview = business.cover_image || null;
-  let logoFileInput;
-  let coverFileInput;
+  let logoPreview = $state(business.logo || null);
+  let coverPreview = $state(business.cover_image || null);
+  let logoFileInput = $state();
+  let coverFileInput = $state();
   
-  let errors = {};
+  let errors = $state({});
   
   // Image handling functions
   function handleLogoChange(event) {
@@ -100,7 +102,7 @@
     }
     
     errors = {};
-    dispatch('submit', formData);
+    onsubmit(formData);
   }
 </script>
 
@@ -361,7 +363,7 @@
   </div>
   
   <div class="flex justify-end space-x-3">
-    <Button variant="outline" type="button" on:click={() => dispatch('cancel')}>
+    <Button variant="outline" type="button" on:click={() => oncancel()}>
       Cancel
     </Button>
     <Button type="submit" {loading}>

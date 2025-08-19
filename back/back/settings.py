@@ -91,6 +91,12 @@ DATABASES = {
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
 
+# Authentication backends - required for custom User model with email as username
+AUTHENTICATION_BACKENDS = [
+    'accounts.backends.EmailBackend',  # Custom backend for email/password auth
+    'django.contrib.auth.backends.ModelBackend',  # Fallback to default backend
+]
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -130,17 +136,38 @@ REST_FRAMEWORK = {
     ],
 }
 
-# JWT Settings
+# JWT Settings (djangorestframework-simplejwt best practices)
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),     # 1 hour
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),        # 7 days
+    'ROTATE_REFRESH_TOKENS': True,                      # Security - generate new refresh token
+    'BLACKLIST_AFTER_ROTATION': True,                   # Security - blacklist old tokens
+    'UPDATE_LAST_LOGIN': False,                         # Don't update last_login on token refresh
+    
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    'LEEWAY': 0,
+    
     'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+    
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    
+    'JTI_CLAIM': 'jti',
+    
+    'TOKEN_OBTAIN_SERIALIZER': 'rest_framework_simplejwt.serializers.TokenObtainPairSerializer',
+    'TOKEN_REFRESH_SERIALIZER': 'rest_framework_simplejwt.serializers.TokenRefreshSerializer',
+    'TOKEN_VERIFY_SERIALIZER': 'rest_framework_simplejwt.serializers.TokenVerifySerializer',
 }
 
-# Google OAuth
+# Google OAuth (django-allauth best practices)
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'SCOPE': [
@@ -150,6 +177,8 @@ SOCIALACCOUNT_PROVIDERS = {
         'AUTH_PARAMS': {
             'access_type': 'online',
         },
+        'OAUTH_PKCE_ENABLED': True,        # Security enhancement
+        'FETCH_USERINFO': True,            # Get user info from /userinfo endpoint
         'APP': {
             'client_id': config('GOOGLE_CLIENT_ID'),
             'secret': config('GOOGLE_CLIENT_SECRET'),
@@ -161,7 +190,26 @@ SOCIALACCOUNT_PROVIDERS = {
 SITE_ID = 1
 
 # CORS
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='').split(',')
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173').split(',')
+
+# For development - allow all origins (remove in production)
+CORS_ALLOW_ALL_ORIGINS = True if DEBUG else False
+
+# Allow credentials
+CORS_ALLOW_CREDENTIALS = True
+
+# Allow specific headers
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # Celery Configuration
 CELERY_BROKER_URL = config('REDIS_URL', default='redis://localhost:6379')

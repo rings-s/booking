@@ -1,0 +1,679 @@
+[
+  {
+    "model": "base.business",
+    "pk": "550e8400-e29b-41d4-a716-446655440030",
+    "fields": {
+      "owner": "550e8400-e29b-41d4-a716-446655440011",
+      "name": "Elite Hair Studio",
+      "slug": "elite-hair-studio",
+      "description": "Premium hair salon offering cutting-edge styles, professional coloring, and luxury treatments. Our experienced stylists create stunning looks for every occasion.",
+      "email": "info@elitehairstudio.com",
+      "phone": "+1-555-0123",
+      "website": "https://www.elitehairstudio.com",
+      "address": "123 Fashion Avenue",
+      "city": "New York",
+      "state": "NY",
+      "country": "United States",
+      "postal_code": "10001",
+      "category": "Beauty & Personal Care",
+      "logo": "",
+      "cover_image": "",
+      "qr_code": "",
+      "is_active": true,
+      "accepts_online_bookings": true,
+      "auto_confirm_bookings": false,
+      "created_at": "2024-01-01T12:30:00Z",
+      "updated_at": "2024-01-01T12:30:00Z"
+    }
+  },
+  {
+    "model": "base.business",
+    "pk": "550e8400-e29b-41d4-a716-446655440031",
+    "fields": {
+      "owner": "550e8400-e29b-41d4-a716-446655440012",
+      "name": "Wellness Spa & Massage",
+      "slug": "wellness-spa-massage",
+      "description": "Tranquil spa offering therapeutic massages, facials, and holistic wellness treatments. Escape to our peaceful sanctuary for ultimate relaxation and rejuvenation.",
+      "email": "book@wellnessspa.com",
+      "phone": "+1-555-0456",
+      "website": "https://www.wellnessspa.com",
+      "address": "456 Serenity Lane",
+      "city": "Los Angeles",
+      "state": "CA",
+      "country": "United States",
+      "postal_code": "90210",
+      "category": "Health & Wellness",
+      "logo": "",
+      "cover_image": "",
+      "qr_code": "",
+      "is_active": true,
+      "accepts_online_bookings": true,
+      "auto_confirm_bookings": true,
+      "created_at": "2024-01-02T10:00:00Z",
+      "updated_at": "2024-01-02T10:00:00Z"
+    }
+  },
+  {
+    "model": "base.business",
+    "pk": "550e8400-e29b-41d4-a716-446655440032",
+    "fields": {
+      "owner": "550e8400-e29b-41d4-a716-446655440011",
+      "name": "Downtown Dental Care",
+      "slug": "downtown-dental-care",
+      "description": "Modern dental practice providing comprehensive oral health services including cleanings, fillings, cosmetic dentistry, and emergency care with state-of-the-art equipment.",
+      "email": "appointments@downtowndentalcare.com",
+      "phone": "+1-555-0789",
+      "website": "https://www.downtowndentalcare.com",
+      "address": "789 Main Street",
+      "city": "Chicago",
+      "state": "IL",
+      "country": "United States",
+      "postal_code": "60601",
+      "category": "Healthcare",
+      "logo": "",
+      "cover_image": "",
+      "qr_code": "",
+      "is_active": true,
+      "accepts_online_bookings": true,
+      "auto_confirm_bookings": false,
+      "created_at": "2024-01-03T09:15:00Z",
+      "updated_at": "2024-01-03T09:15:00Z"
+    }
+  },
+  {
+    "model": "base.businesshours",
+    "pk": "550e8400-e29b-41d4-a716-446655440040",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "weekday": 0,
+      "opening_time": "09:00:00",
+      "closing_time": "19:00:00",
+      "is_closed": false
+    }
+  },
+  {
+    "model": "base.businesshours",
+    "pk": "550e8400-e29b-41d4-a716-446655440041",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "weekday": 1,
+      "opening_time": "09:00:00",
+      "closing_time": "19:00:00",
+      "is_closed": false
+    }
+  },
+  {
+    "model": "base.businesshours",
+    "pk": "550e8400-e29b-41d4-a716-446655440042",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "weekday": 2,
+      "opening_time": "09:00:00",
+      "closing_time": "19:00:00",
+      "is_closed": false
+    }
+  },
+  {
+    "model": "base.businesshours",
+    "pk": "550e8400-e29b-41d4-a716-446655440043",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "weekday": 3,
+      "opening_time": "09:00:00",
+      "closing_time": "19:00:00",
+      "is_closed": false
+    }
+  },
+  {
+    "model": "base.businesshours",
+    "pk": "550e8400-e29b-41d4-a716-446655440044",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "weekday": 4,
+      "opening_time": "09:00:00",
+      "closing_time": "20:00:00",
+      "is_closed": false
+    }
+  },
+  {
+    "model": "base.businesshours",
+    "pk": "550e8400-e29b-41d4-a716-446655440045",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "weekday": 5,
+      "opening_time": "09:00:00",
+      "closing_time": "20:00:00",
+      "is_closed": false
+    }
+  },
+  {
+    "model": "base.businesshours",
+    "pk": "550e8400-e29b-41d4-a716-446655440046",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "weekday": 6,
+      "opening_time": "10:00:00",
+      "closing_time": "17:00:00",
+      "is_closed": false
+    }
+  },
+  {
+    "model": "base.businesshours",
+    "pk": "550e8400-e29b-41d4-a716-446655440047",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440031",
+      "weekday": 0,
+      "opening_time": "08:00:00",
+      "closing_time": "21:00:00",
+      "is_closed": false
+    }
+  },
+  {
+    "model": "base.businesshours",
+    "pk": "550e8400-e29b-41d4-a716-446655440048",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440031",
+      "weekday": 1,
+      "opening_time": "08:00:00",
+      "closing_time": "21:00:00",
+      "is_closed": false
+    }
+  },
+  {
+    "model": "base.businesshours",
+    "pk": "550e8400-e29b-41d4-a716-446655440049",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440031",
+      "weekday": 2,
+      "opening_time": "08:00:00",
+      "closing_time": "21:00:00",
+      "is_closed": false
+    }
+  },
+  {
+    "model": "base.businesshours",
+    "pk": "550e8400-e29b-41d4-a716-446655440050",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440031",
+      "weekday": 3,
+      "opening_time": "08:00:00",
+      "closing_time": "21:00:00",
+      "is_closed": false
+    }
+  },
+  {
+    "model": "base.businesshours",
+    "pk": "550e8400-e29b-41d4-a716-446655440051",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440031",
+      "weekday": 4,
+      "opening_time": "08:00:00",
+      "closing_time": "21:00:00",
+      "is_closed": false
+    }
+  },
+  {
+    "model": "base.businesshours",
+    "pk": "550e8400-e29b-41d4-a716-446655440052",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440031",
+      "weekday": 5,
+      "opening_time": "08:00:00",
+      "closing_time": "21:00:00",
+      "is_closed": false
+    }
+  },
+  {
+    "model": "base.businesshours",
+    "pk": "550e8400-e29b-41d4-a716-446655440053",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440031",
+      "weekday": 6,
+      "opening_time": "09:00:00",
+      "closing_time": "20:00:00",
+      "is_closed": false
+    }
+  },
+  {
+    "model": "base.service",
+    "pk": "550e8400-e29b-41d4-a716-446655440060",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "name": "Haircut & Style",
+      "description": "Professional haircut with wash, style, and finish. Includes consultation with our expert stylists.",
+      "duration_minutes": 60,
+      "price": "65.00",
+      "is_active": true,
+      "max_bookings_per_slot": 1,
+      "buffer_time_minutes": 15,
+      "created_at": "2024-01-01T13:00:00Z",
+      "updated_at": "2024-01-01T13:00:00Z"
+    }
+  },
+  {
+    "model": "base.service",
+    "pk": "550e8400-e29b-41d4-a716-446655440061",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "name": "Hair Color",
+      "description": "Full hair coloring service including consultation, color application, and styling. Premium products used.",
+      "duration_minutes": 120,
+      "price": "150.00",
+      "is_active": true,
+      "max_bookings_per_slot": 1,
+      "buffer_time_minutes": 30,
+      "created_at": "2024-01-01T13:05:00Z",
+      "updated_at": "2024-01-01T13:05:00Z"
+    }
+  },
+  {
+    "model": "base.service",
+    "pk": "550e8400-e29b-41d4-a716-446655440062",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "name": "Highlights",
+      "description": "Professional highlighting service with foil technique. Includes toning and styling.",
+      "duration_minutes": 90,
+      "price": "120.00",
+      "is_active": true,
+      "max_bookings_per_slot": 1,
+      "buffer_time_minutes": 15,
+      "created_at": "2024-01-01T13:10:00Z",
+      "updated_at": "2024-01-01T13:10:00Z"
+    }
+  },
+  {
+    "model": "base.service",
+    "pk": "550e8400-e29b-41d4-a716-446655440063",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440031",
+      "name": "Swedish Massage",
+      "description": "Relaxing 60-minute Swedish massage to reduce tension and promote wellness. Includes aromatherapy oils.",
+      "duration_minutes": 60,
+      "price": "90.00",
+      "is_active": true,
+      "max_bookings_per_slot": 1,
+      "buffer_time_minutes": 15,
+      "created_at": "2024-01-02T10:30:00Z",
+      "updated_at": "2024-01-02T10:30:00Z"
+    }
+  },
+  {
+    "model": "base.service",
+    "pk": "550e8400-e29b-41d4-a716-446655440064",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440031",
+      "name": "Deep Tissue Massage",
+      "description": "Therapeutic deep tissue massage targeting muscle tension and knots. Perfect for stress relief and muscle recovery.",
+      "duration_minutes": 90,
+      "price": "130.00",
+      "is_active": true,
+      "max_bookings_per_slot": 1,
+      "buffer_time_minutes": 20,
+      "created_at": "2024-01-02T10:35:00Z",
+      "updated_at": "2024-01-02T10:35:00Z"
+    }
+  },
+  {
+    "model": "base.service",
+    "pk": "550e8400-e29b-41d4-a716-446655440065",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440031",
+      "name": "Facial Treatment",
+      "description": "Luxurious facial treatment with deep cleansing, exfoliation, and moisturizing. Customized for your skin type.",
+      "duration_minutes": 75,
+      "price": "110.00",
+      "is_active": true,
+      "max_bookings_per_slot": 1,
+      "buffer_time_minutes": 15,
+      "created_at": "2024-01-02T10:40:00Z",
+      "updated_at": "2024-01-02T10:40:00Z"
+    }
+  },
+  {
+    "model": "base.service",
+    "pk": "550e8400-e29b-41d4-a716-446655440066",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440032",
+      "name": "Dental Cleaning",
+      "description": "Professional dental cleaning and checkup with hygienist. Includes fluoride treatment and oral health assessment.",
+      "duration_minutes": 45,
+      "price": "125.00",
+      "is_active": true,
+      "max_bookings_per_slot": 1,
+      "buffer_time_minutes": 15,
+      "created_at": "2024-01-03T09:45:00Z",
+      "updated_at": "2024-01-03T09:45:00Z"
+    }
+  },
+  {
+    "model": "base.service",
+    "pk": "550e8400-e29b-41d4-a716-446655440067",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440032",
+      "name": "Dental Consultation",
+      "description": "Initial consultation with dentist including examination, X-rays, and treatment planning.",
+      "duration_minutes": 30,
+      "price": "75.00",
+      "is_active": true,
+      "max_bookings_per_slot": 1,
+      "buffer_time_minutes": 10,
+      "created_at": "2024-01-03T09:50:00Z",
+      "updated_at": "2024-01-03T09:50:00Z"
+    }
+  },
+  {
+    "model": "base.customer",
+    "pk": "550e8400-e29b-41d4-a716-446655440070",
+    "fields": {
+      "user": "550e8400-e29b-41d4-a716-446655440013",
+      "phone": "+1-555-1234",
+      "date_of_birth": "1985-03-15",
+      "preferred_businesses": ["550e8400-e29b-41d4-a716-446655440030", "550e8400-e29b-41d4-a716-446655440031"],
+      "receive_notifications": true,
+      "receive_marketing_emails": false,
+      "total_bookings": 5,
+      "total_spent": "425.00",
+      "created_at": "2024-01-03T11:30:00Z",
+      "updated_at": "2024-01-28T14:00:00Z"
+    }
+  },
+  {
+    "model": "base.customer",
+    "pk": "550e8400-e29b-41d4-a716-446655440071",
+    "fields": {
+      "user": "550e8400-e29b-41d4-a716-446655440014",
+      "phone": "+1-555-5678",
+      "date_of_birth": "1990-07-22",
+      "preferred_businesses": ["550e8400-e29b-41d4-a716-446655440031"],
+      "receive_notifications": true,
+      "receive_marketing_emails": true,
+      "total_bookings": 3,
+      "total_spent": "320.00",
+      "created_at": "2024-01-04T15:20:00Z",
+      "updated_at": "2024-01-25T11:30:00Z"
+    }
+  },
+  {
+    "model": "base.customer",
+    "pk": "550e8400-e29b-41d4-a716-446655440072",
+    "fields": {
+      "user": "550e8400-e29b-41d4-a716-446655440015",
+      "phone": "+1-555-9012",
+      "date_of_birth": "1988-11-08",
+      "preferred_businesses": ["550e8400-e29b-41d4-a716-446655440032"],
+      "receive_notifications": true,
+      "receive_marketing_emails": false,
+      "total_bookings": 2,
+      "total_spent": "200.00",
+      "created_at": "2024-01-05T08:50:00Z",
+      "updated_at": "2024-01-20T16:45:00Z"
+    }
+  },
+  {
+    "model": "base.customer",
+    "pk": "550e8400-e29b-41d4-a716-446655440073",
+    "fields": {
+      "user": "550e8400-e29b-41d4-a716-446655440016",
+      "phone": "+1-555-3456",
+      "date_of_birth": "1992-05-30",
+      "preferred_businesses": [],
+      "receive_notifications": true,
+      "receive_marketing_emails": true,
+      "total_bookings": 1,
+      "total_spent": "65.00",
+      "created_at": "2024-01-06T12:40:00Z",
+      "updated_at": "2024-01-15T10:20:00Z"
+    }
+  },
+  {
+    "model": "base.booking",
+    "pk": "550e8400-e29b-41d4-a716-446655440080",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "customer": "550e8400-e29b-41d4-a716-446655440070",
+      "service": "550e8400-e29b-41d4-a716-446655440060",
+      "booking_date": "2024-01-15",
+      "start_time": "10:00:00",
+      "end_time": "11:00:00",
+      "status": "completed",
+      "notes": "Regular customer, prefers specific stylist",
+      "total_price": "65.00",
+      "is_paid": true,
+      "payment_method": "credit_card",
+      "payment_id": "pi_1234567890",
+      "created_at": "2024-01-10T14:30:00Z",
+      "updated_at": "2024-01-15T11:15:00Z"
+    }
+  },
+  {
+    "model": "base.booking",
+    "pk": "550e8400-e29b-41d4-a716-446655440081",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "customer": "550e8400-e29b-41d4-a716-446655440070",
+      "service": "550e8400-e29b-41d4-a716-446655440061",
+      "booking_date": "2024-02-01",
+      "start_time": "14:00:00",
+      "end_time": "16:00:00",
+      "status": "confirmed",
+      "notes": "First time color service, consultation needed",
+      "total_price": "150.00",
+      "is_paid": false,
+      "payment_method": "",
+      "payment_id": "",
+      "created_at": "2024-01-25T16:20:00Z",
+      "updated_at": "2024-01-25T16:25:00Z"
+    }
+  },
+  {
+    "model": "base.booking",
+    "pk": "550e8400-e29b-41d4-a716-446655440082",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440031",
+      "customer": "550e8400-e29b-41d4-a716-446655440071",
+      "service": "550e8400-e29b-41d4-a716-446655440063",
+      "booking_date": "2024-01-20",
+      "start_time": "15:30:00",
+      "end_time": "16:30:00",
+      "status": "completed",
+      "notes": "Client prefers medium pressure",
+      "total_price": "90.00",
+      "is_paid": true,
+      "payment_method": "debit_card",
+      "payment_id": "pi_0987654321",
+      "created_at": "2024-01-18T11:45:00Z",
+      "updated_at": "2024-01-20T17:00:00Z"
+    }
+  },
+  {
+    "model": "base.booking",
+    "pk": "550e8400-e29b-41d4-a716-446655440083",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440031",
+      "customer": "550e8400-e29b-41d4-a716-446655440071",
+      "service": "550e8400-e29b-41d4-a716-446655440064",
+      "booking_date": "2024-02-05",
+      "start_time": "11:00:00",
+      "end_time": "12:30:00",
+      "status": "confirmed",
+      "notes": "Follow-up massage session",
+      "total_price": "130.00",
+      "is_paid": true,
+      "payment_method": "credit_card",
+      "payment_id": "pi_1122334455",
+      "created_at": "2024-01-30T09:20:00Z",
+      "updated_at": "2024-01-30T09:20:00Z"
+    }
+  },
+  {
+    "model": "base.booking",
+    "pk": "550e8400-e29b-41d4-a716-446655440084",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440032",
+      "customer": "550e8400-e29b-41d4-a716-446655440072",
+      "service": "550e8400-e29b-41d4-a716-446655440066",
+      "booking_date": "2024-01-18",
+      "start_time": "09:00:00",
+      "end_time": "09:45:00",
+      "status": "completed",
+      "notes": "Annual cleaning, no issues found",
+      "total_price": "125.00",
+      "is_paid": true,
+      "payment_method": "insurance",
+      "payment_id": "ins_9988776655",
+      "created_at": "2024-01-15T13:10:00Z",
+      "updated_at": "2024-01-18T09:50:00Z"
+    }
+  },
+  {
+    "model": "base.booking",
+    "pk": "550e8400-e29b-41d4-a716-446655440085",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "customer": "550e8400-e29b-41d4-a716-446655440073",
+      "service": "550e8400-e29b-41d4-a716-446655440060",
+      "booking_date": "2024-02-10",
+      "start_time": "16:00:00",
+      "end_time": "17:00:00",
+      "status": "pending",
+      "notes": "New customer, first appointment",
+      "total_price": "65.00",
+      "is_paid": false,
+      "payment_method": "",
+      "payment_id": "",
+      "created_at": "2024-02-05T12:30:00Z",
+      "updated_at": "2024-02-05T12:30:00Z"
+    }
+  },
+  {
+    "model": "base.review",
+    "pk": "550e8400-e29b-41d4-a716-446655440090",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "customer": "550e8400-e29b-41d4-a716-446655440070",
+      "booking": "550e8400-e29b-41d4-a716-446655440080",
+      "rating": 5,
+      "title": "Amazing Experience!",
+      "comment": "The stylist was incredibly skilled and listened to exactly what I wanted. The salon has a great atmosphere and the service was top-notch. Will definitely be back!",
+      "is_verified": true,
+      "is_featured": true,
+      "business_response": "Thank you so much for the wonderful review! We're thrilled you loved your new style and look forward to seeing you again soon.",
+      "response_date": "2024-01-16T10:30:00Z",
+      "created_at": "2024-01-15T18:20:00Z",
+      "updated_at": "2024-01-16T10:30:00Z"
+    }
+  },
+  {
+    "model": "base.review",
+    "pk": "550e8400-e29b-41d4-a716-446655440091",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440031",
+      "customer": "550e8400-e29b-41d4-a716-446655440071",
+      "booking": "550e8400-e29b-41d4-a716-446655440082",
+      "rating": 4,
+      "title": "Very Relaxing",
+      "comment": "Great massage experience. The therapist was professional and the environment was very peaceful. Only minor complaint is that the room was a bit cold at first.",
+      "is_verified": true,
+      "is_featured": false,
+      "business_response": "Thank you for your feedback! We've addressed the room temperature issue and hope to see you again soon for another relaxing session.",
+      "response_date": "2024-01-21T09:15:00Z",
+      "created_at": "2024-01-20T19:45:00Z",
+      "updated_at": "2024-01-21T09:15:00Z"
+    }
+  },
+  {
+    "model": "base.review",
+    "pk": "550e8400-e29b-41d4-a716-446655440092",
+    "fields": {
+      "business": "550e8400-e29b-41d4-a716-446655440032",
+      "customer": "550e8400-e29b-41d4-a716-446655440072",
+      "booking": "550e8400-e29b-41d4-a716-446655440084",
+      "rating": 5,
+      "title": "Professional and Thorough",
+      "comment": "Dr. Smith and the hygienist were excellent. Very thorough cleaning and great advice on oral health. Modern facilities and friendly staff. Highly recommend!",
+      "is_verified": true,
+      "is_featured": true,
+      "business_response": "",
+      "response_date": null,
+      "created_at": "2024-01-18T16:30:00Z",
+      "updated_at": "2024-01-18T16:30:00Z"
+    }
+  },
+  {
+    "model": "base.notification",
+    "pk": "550e8400-e29b-41d4-a716-446655440100",
+    "fields": {
+      "user": "550e8400-e29b-41d4-a716-446655440013",
+      "type": "booking_confirmed",
+      "title": "Booking Confirmed",
+      "message": "Your hair color appointment at Elite Hair Studio has been confirmed for February 1st at 2:00 PM.",
+      "booking": "550e8400-e29b-41d4-a716-446655440081",
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "is_read": false,
+      "read_at": null,
+      "send_email": true,
+      "send_push": true,
+      "email_sent": true,
+      "push_sent": true,
+      "created_at": "2024-01-25T16:25:00Z"
+    }
+  },
+  {
+    "model": "base.notification",
+    "pk": "550e8400-e29b-41d4-a716-446655440101",
+    "fields": {
+      "user": "550e8400-e29b-41d4-a716-446655440014",
+      "type": "booking_reminder",
+      "title": "Appointment Reminder",
+      "message": "Don't forget your deep tissue massage appointment tomorrow at 11:00 AM at Wellness Spa & Massage.",
+      "booking": "550e8400-e29b-41d4-a716-446655440083",
+      "business": "550e8400-e29b-41d4-a716-446655440031",
+      "is_read": true,
+      "read_at": "2024-02-04T14:20:00Z",
+      "send_email": true,
+      "send_push": true,
+      "email_sent": true,
+      "push_sent": true,
+      "created_at": "2024-02-04T10:00:00Z"
+    }
+  },
+  {
+    "model": "base.notification",
+    "pk": "550e8400-e29b-41d4-a716-446655440102",
+    "fields": {
+      "user": "550e8400-e29b-41d4-a716-446655440011",
+      "type": "new_customer",
+      "title": "New Customer Registration",
+      "message": "A new customer (Emma Taylor) has registered and made their first booking at your salon.",
+      "booking": "550e8400-e29b-41d4-a716-446655440085",
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "is_read": false,
+      "read_at": null,
+      "send_email": true,
+      "send_push": false,
+      "email_sent": true,
+      "push_sent": false,
+      "created_at": "2024-02-05T12:35:00Z"
+    }
+  },
+  {
+    "model": "base.notification",
+    "pk": "550e8400-e29b-41d4-a716-446655440103",
+    "fields": {
+      "user": "550e8400-e29b-41d4-a716-446655440013",
+      "type": "review_request",
+      "title": "How was your service?",
+      "message": "We'd love to hear about your recent hair color service at Elite Hair Studio. Please take a moment to leave a review.",
+      "booking": "550e8400-e29b-41d4-a716-446655440080",
+      "business": "550e8400-e29b-41d4-a716-446655440030",
+      "is_read": false,
+      "read_at": null,
+      "send_email": true,
+      "send_push": false,
+      "email_sent": true,
+      "push_sent": false,
+      "created_at": "2024-01-17T12:00:00Z"
+    }
+  }
+]

@@ -6,9 +6,12 @@
     import StarRating from '../review/StarRating.svelte';
     import Button from '../common/Button.svelte';
     
-    export let business;
-    export let showActions = false;
-    export let showQuickActions = false;
+    let {
+        business,
+        showActions = false,
+        showQuickActions = false,
+        ...restProps
+    } = $props();
     
     const dispatch = createEventDispatcher();
     

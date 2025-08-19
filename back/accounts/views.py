@@ -54,83 +54,64 @@ class LoginView(generics.GenericAPIView):
     permission_classes = [AllowAny]
     
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
+        import logging
+        logger = logging.getLogger(__name__)
         
-        refresh = RefreshToken.for_user(user)
-        
-        return Response({
-            'user': UserSerializer(user).data,
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
-        })
+        try:
+            logger.info(f"Login attempt with data: {request.data}")
+            serializer = self.get_serializer(data=request.data)
+            
+            if not serializer.is_valid():
+                logger.error(f"Serializer errors: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            user = serializer.validated_data['user']
+            logger.info(f"User authenticated: {user.email}")
+            
+            refresh = RefreshToken.for_user(user)
+            
+            return Response({
+                'user': UserSerializer(user).data,
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+            })
+            
+        except Exception as e:
+            logger.error(f"Login error: {str(e)}", exc_info=True)
+            return Response(
+                {'error': 'Login failed', 'detail': str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class GoogleLoginView(generics.GenericAPIView):
     serializer_class = GoogleLoginSerializer
     permission_classes = [AllowAny]
-    throttle_scope = 'oauth_login'
     
     def post(self, request, *args, **kwargs):
-        import logging
-        logger = logging.getLogger(__name__)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
         
-        try:
-            # Log authentication attempt
-            client_ip = self.get_client_ip(request)
-            user_agent = request.META.get('HTTP_USER_AGENT', 'Unknown')
-            logger.info(f'Google OAuth attempt from IP: {client_ip}, User-Agent: {user_agent[:100]}')
-            
-            # Validate request data
-            serializer = self.get_serializer(data=request.data)
-            
-            if not serializer.is_valid():
-                logger.warning(f'Google OAuth validation failed from IP: {client_ip}, errors: {serializer.errors}')
-                return Response({
-                    'error': 'Invalid request data',
-                    'details': serializer.errors
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            user = serializer.validated_data['user']
-            google_data = serializer.validated_data.get('google_data', {})
-            
-            # Ensure user has a subscription
-            subscription_created = self._ensure_user_subscription(user)
-            
-            # Generate JWT tokens with additional claims
-            refresh = RefreshToken.for_user(user)
-            access_token = refresh.access_token
-            
-            # Add custom claims
-            access_token['login_method'] = 'google'
-            access_token['ip'] = client_ip
-            
-            # Log successful authentication
-            logger.info(f'Google OAuth successful for user: {user.email} from IP: {client_ip}')
-            
-            # Prepare response data
-            response_data = {
-                'user': UserSerializer(user).data,
-                'access': str(access_token),
-                'refresh': str(refresh),
-                'subscription_created': subscription_created
-            }
-            
-            # Add security headers to response
-            response = Response(response_data, status=status.HTTP_200_OK)
-            response['X-Content-Type-Options'] = 'nosniff'
-            response['X-Frame-Options'] = 'DENY'
-            response['X-XSS-Protection'] = '1; mode=block'
-            
-            return response
-            
-        except Exception as e:
-            logger.error(f'Unexpected error in Google OAuth from IP: {client_ip}: {str(e)}', exc_info=True)
-            return Response({
-                'error': 'Authentication failed',
-                'message': 'An unexpected error occurred during authentication'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # Ensure user has a subscription
+        self._ensure_user_subscription(user)
+        
+        # Generate JWT tokens (consistent with LoginView)
+        refresh = RefreshToken.for_user(user)
+        
+        response_data = {
+            'user': UserSerializer(user).data,
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        }
+        
+        # Add security headers to response
+        response = Response(response_data, status=status.HTTP_200_OK)
+        response['X-Content-Type-Options'] = 'nosniff'
+        response['X-Frame-Options'] = 'DENY'
+        response['X-XSS-Protection'] = '1; mode=block'
+        
+        return response
     
     def get_client_ip(self, request):
         """Get client IP address from request"""

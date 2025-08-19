@@ -1,12 +1,14 @@
 <!-- src/lib/components/common/Modal.svelte -->
 <script>
-    import { createEventDispatcher } from 'svelte';
-    
-    export let open = false;
-    export let title = '';
-    export let size = 'md';
-    
-    const dispatch = createEventDispatcher();
+    let {
+        open = $bindable(false),
+        title = '',
+        size = 'md',
+        children,
+        footer = null,
+        onclose = () => {},
+        ...restProps
+    } = $props();
     
     const sizes = {
       sm: 'max-w-md',
@@ -18,7 +20,7 @@
     
     function closeModal() {
       open = false;
-      dispatch('close');
+      onclose();
     }
     
     function handleBackdropClick(e) {
@@ -66,12 +68,12 @@
           {/if}
           
           <div class="px-4 pb-4 sm:px-6 sm:pb-4">
-            <slot />
+            {@render children?.()}
           </div>
           
-          {#if $$slots.footer}
+          {#if footer}
             <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-              <slot name="footer" />
+              {@render footer()}
             </div>
           {/if}
         </div>

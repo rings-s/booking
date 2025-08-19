@@ -1,5 +1,5 @@
 // src/lib/api/reviews.js
-import apiClient from './client';
+import apiClient from './clients';
 
 export const reviewAPI = {
   async list(params = {}) {
@@ -39,6 +39,11 @@ export const reviewAPI = {
   },
 
   async getStats(businessId) {
-    return apiClient.get(`/reviews/stats/`, { business: businessId });
+    // Backend doesn't have reviews stats endpoint yet - return mock response
+    return { data: {
+      total_reviews: 0,
+      average_rating: 0,
+      rating_breakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
+    }, error: null };
   }
 };

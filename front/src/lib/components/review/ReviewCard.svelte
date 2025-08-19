@@ -1,20 +1,28 @@
 <!-- src/lib/components/review/ReviewCard.svelte -->
 <script>
-    import { createEventDispatcher } from 'svelte';
     import { formatDate, formatRelativeTime } from '$lib/utils/formatters';
     import StarRating from './StarRating.svelte';
     import Avatar from '../common/Avatar.svelte';
     import Button from '../common/Button.svelte';
     import Modal from '../common/Modal.svelte';
+    import Alert from '../common/Alert.svelte';
     import { reviewAPI } from '$lib/api/reviews';
     import toast from 'svelte-french-toast';
     
-    export let review;
-    export let showActions = false;
-    export let isBusinessOwner = false;
-    export let compact = false;
-    
-    const dispatch = createEventDispatcher();
+    let {
+        review,
+        showActions = false,
+        isBusinessOwner = false,
+        compact = false,
+        onresponded = () => {},
+        onfeatured = () => {},
+        onedit = () => {},
+        ondelete = () => {},
+        onmenu = () => {},
+        onviewimage = () => {},
+        onshare = () => {},
+        ...restProps
+    } = $props();
     
     let showResponseModal = false;
     let responseText = '';
@@ -39,7 +47,7 @@
         review.response_date = new Date().toISOString();
         showResponseModal = false;
         toast.success('Response posted successfully');
-        dispatch('responded', review);
+        onresponded(review);
       }
       responding = false;
     }
@@ -50,7 +58,7 @@
       if (!error) {
         review.is_featured = true;
         toast.success('Review marked as featured');
-        dispatch('featured', review);
+        onfeatured(review);
       }
     }
     
@@ -83,12 +91,12 @@
     }
     
     function handleEdit() {
-      dispatch('edit', review);
+      onedit(review);
     }
     
     function handleDelete() {
       if (confirm('Are you sure you want to delete this review?')) {
-        dispatch('delete', review);
+        ondelete(review);
       }
     }
   </script>
@@ -146,7 +154,7 @@
               <button
                 type="button"
                 class="text-gray-400 hover:text-gray-500"
-                on:click={() => dispatch('menu', review)}
+                on:click={() => onmenu(review)}
               >
                 <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -182,7 +190,7 @@
               <button
                 type="button"
                 class="relative w-20 h-20 rounded-lg overflow-hidden group"
-                on:click={() => dispatch('viewImage', { review, imageIndex: index })}
+                on:click={() => onviewimage({ review, imageIndex: index })}
               >
                 <img
                   src={image.thumbnail || image.url}
@@ -242,7 +250,7 @@
               <button
                 type="button"
                 class="flex items-center text-sm text-gray-500 hover:text-gray-700"
-                on:click={() => dispatch('share', review)}
+                on:click={() => onshare(review)}
               >
                 <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a3 3 0 10-4.732 0m-9.032-4.026A3 3 0 108.684 6.632m0 6.736a3 3 0 00-4.732 0" />
@@ -296,7 +304,7 @@
   </div>
   
   <!-- Response Modal -->
-  <Modal bind:open={showResponseModal} title="Respond to Review" size="md">
+  <Modal bind:open={showResponseModal} title="Respond to Review" size="md" footer={responseFooter}>
     <div class="space-y-4">
       <div class="bg-gray-50 rounded-lg p-4">
         <div class="flex items-center mb-2">
@@ -323,18 +331,10 @@
       </div>
     </div>
     
-    <div slot="footer" class="flex justify-end gap-3">
-      <Button variant="outline" on:click={() => showResponseModal = false}>
-        Cancel
-      </Button>
-      <Button on:click={handleRespond} loading={responding}>
-        Post Response
-      </Button>
-    </div>
   </Modal>
   
   <!-- Report Modal -->
-  <Modal bind:open={showReportModal} title="Report Review" size="md">
+  <Modal bind:open={showReportModal} title="Report Review" size="md" footer={reportFooter}>
     <div class="space-y-4">
       <Alert type="info">
         Please let us know why you're reporting this review. We'll investigate and take appropriate action.
@@ -373,12 +373,26 @@
       {/if}
     </div>
     
-    <div slot="footer" class="flex justify-end gap-3">
-      <Button variant="outline" on:click={() => showReportModal = false}>
-        Cancel
-      </Button>
-      <Button variant="danger" on:click={handleReport} loading={reporting}>
-        Report Review
-      </Button>
-    </div>
   </Modal>
+
+{#snippet responseFooter()}
+  <div class="flex justify-end gap-3">
+    <Button variant="outline" on:click={() => showResponseModal = false}>
+      Cancel
+    </Button>
+    <Button on:click={handleRespond} loading={responding}>
+      Post Response
+    </Button>
+  </div>
+{/snippet}
+
+{#snippet reportFooter()}
+  <div class="flex justify-end gap-3">
+    <Button variant="outline" on:click={() => showReportModal = false}>
+      Cancel
+    </Button>
+    <Button variant="danger" on:click={handleReport} loading={reporting}>
+      Report Review
+    </Button>
+  </div>
+{/snippet}

@@ -8,10 +8,13 @@
     import Spinner from '../common/Spinner.svelte';
     import { goto } from '$app/navigation';
     
-    export let activities = [];
-    export let loading = false;
-    export let showViewAll = true;
-    export let maxItems = 10;
+    let {
+        activities = [],
+        loading = false,
+        showViewAll = true,
+        maxItems = 10,
+        ...restProps
+    } = $props();
     
     const activityIcons = {
       booking_created: {
@@ -58,18 +61,20 @@
       }
     }
     
-    $: displayedActivities = activities.slice(0, maxItems);
+    let displayedActivities = $derived(activities.slice(0, maxItems));
   </script>
   
   <Card>
-    <div slot="header" class="flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900">Recent Activity</h3>
-      {#if showViewAll && activities.length > maxItems}
-        <a href="/activities" class="text-sm text-indigo-600 hover:text-indigo-500">
-          View all
-        </a>
-      {/if}
-    </div>
+    {#snippet header()}
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">Recent Activity</h3>
+        {#if showViewAll && activities.length > maxItems}
+          <a href="/activities" class="text-sm text-indigo-600 hover:text-indigo-500">
+            View all
+          </a>
+        {/if}
+      </div>
+    {/snippet}
     
     {#if loading}
       <div class="p-6">

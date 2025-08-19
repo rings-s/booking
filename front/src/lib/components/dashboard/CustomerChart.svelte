@@ -7,15 +7,18 @@
     import Spinner from '../common/Spinner.svelte';
     import { formatPercentage } from '$lib/utils/formatters';
     
-    export let data = [];
-    export let loading = false;
-    export let title = 'Customer Analytics';
-    export let height = '300px';
-    export let view = 'acquisition'; // 'acquisition', 'retention', 'demographics', 'satisfaction'
+    let {
+        data = [],
+        loading = false,
+        title = 'Customer Analytics',
+        height = '300px',
+        view = 'acquisition', // 'acquisition', 'retention', 'demographics', 'satisfaction'
+        ...restProps
+    } = $props();
     
-    let canvas;
-    let chart;
-    let selectedView = view;
+    let canvas = $state();
+    let chart = $state();
+    let selectedView = $state(view);
     
     const viewOptions = [
       { value: 'acquisition', label: 'Customer Acquisition' },
@@ -24,26 +27,45 @@
       { value: 'satisfaction', label: 'Satisfaction' }
     ];
     
-    onMount(() => {
-      if (data.length > 0 || (typeof data === 'object' && Object.keys(data).length > 0)) {
-        initChart();
+
+    onDestroy(() => {
+      if (chart) {
+        chart.destroy();
       }
-      
-      return () => {
-        if (chart) {
-          chart.destroy();
-        }
-      };
     });
     
-    $: if (chart && (data.length > 0 || (typeof data === 'object' && Object.keys(data).length > 0))) {
-      updateChart();
-    }
+    $effect(() => {
+      console.log('CustomerChart $effect:', {
+        hasCanvas: !!canvas,
+        dataType: typeof data,
+        data: data,
+        hasChart: !!chart,
+        totalCustomers: data?.total || 0,
+        newThisMonth: data?.new_this_month || 0,
+        returning: data?.returning || 0
+      });
+      
+      if (canvas && data && (Array.isArray(data) ? data.length > 0 : (typeof data === 'object' && Object.keys(data).length > 0))) {
+        if (chart) {
+          console.log('CustomerChart: Updating existing chart');
+          updateChart();
+        } else {
+          console.log('CustomerChart: Initializing new chart');
+          initChart();
+        }
+      }
+    });
     
     function initChart() {
-      const ctx = canvas.getContext('2d');
-      const chartConfig = getChartConfig();
-      chart = new Chart(ctx, chartConfig);
+      if (!canvas) return;
+      
+      try {
+        const ctx = canvas.getContext('2d');
+        const chartConfig = getChartConfig();
+        chart = new Chart(ctx, chartConfig);
+      } catch (error) {
+        console.error('CustomerChart: Error initializing chart:', error);
+      }
     }
     
     function getChartConfig() {
@@ -62,8 +84,63 @@
     }
     
     function getAcquisitionConfig() {
+      // Handle both array data and simple object data
       const processedData = Array.isArray(data) ? data : data.acquisition || [];
       
+      // If we have simple customer metrics object, create a simple chart
+      if (!Array.isArray(data) && typeof data === 'object' && data.total !== undefined) {
+        const chartData = [data.new_this_month || 0, data.returning || 0];
+        
+        // Ensure we have at least some data to display
+        if (chartData.every(val => val === 0) && data.total > 0) {
+          chartData[0] = data.total; // Show all as new if no breakdown available
+        }
+        
+        return {
+          type: 'doughnut',
+          data: {
+            labels: ['New Customers', 'Returning Customers'],
+            datasets: [{
+              data: chartData,
+              backgroundColor: [
+                'rgba(34, 197, 94, 0.8)',
+                'rgba(79, 70, 229, 0.8)'
+              ],
+              borderColor: [
+                'rgb(34, 197, 94)',
+                'rgb(79, 70, 229)'
+              ],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                  padding: 20,
+                  font: { size: 12 }
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: (context) => {
+                    const total = data.total || 0;
+                    const value = context.parsed || 0;
+                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+                    return `${context.label}: ${value} (${percentage}%)`;
+                  }
+                }
+              }
+            }
+          }
+        };
+      }
+      
+      // Original array-based chart
       return {
         type: 'line',
         data: {
@@ -253,45 +330,60 @@
     function updateChart() {
       if (!chart) return;
       
-      chart.destroy();
-      initChart();
+      // For Svelte 5, ensure we properly update the chart
+      const chartConfig = getChartConfig();
+      
+      // Update data and options
+      chart.data.labels = chartConfig.data.labels;
+      chart.data.datasets = chartConfig.data.datasets;
+      Object.assign(chart.options, chartConfig.options);
+      
+      chart.update();
     }
     
     function handleViewChange() {
       if (chart) {
         chart.destroy();
+      }
+      if (canvas) {
         initChart();
       }
     }
     
     // Calculate key metrics - ensure data is always safe to use
-    $: dataArray = Array.isArray(data) ? data : [];
-    $: retentionArray = Array.isArray(data?.retention) ? data.retention : [];
+    let dataArray = $derived(Array.isArray(data) ? data : []);
+    let retentionArray = $derived(Array.isArray(data?.retention) ? data.retention : []);
     
-    $: totalCustomers = dataArray.length > 0
-      ? dataArray.reduce((sum, d) => sum + (d.new_customers || 0) + (d.returning_customers || 0), 0)
-      : data?.total || 0;
+    let totalCustomers = $derived(
+      Array.isArray(data) && dataArray.length > 0
+        ? dataArray.reduce((sum, d) => sum + (d.new_customers || 0) + (d.returning_customers || 0), 0)
+        : data?.total || 0
+    );
     
-    $: averageRetention = retentionArray.length > 0
-      ? retentionArray.reduce((sum, d) => sum + (d.rate || 0), 0) / retentionArray.length
-      : 0;
+    let averageRetention = $derived(
+      Array.isArray(data?.retention) && retentionArray.length > 0
+        ? retentionArray.reduce((sum, d) => sum + (d.rate || 0), 0) / retentionArray.length
+        : data?.retention_rate || 0
+    );
   </script>
   
-  <Card>
-    <div slot="header" class="flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900">{title}</h3>
-      <Select
-        bind:value={selectedView}
-        options={viewOptions}
-        on:change={handleViewChange}
-      />
-    </div>
+  <Card >
+    {#snippet header()}
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">{title}</h3>
+        <Select
+          bind:value={selectedView}
+          options={viewOptions}
+          on:change={handleViewChange}
+        />
+      </div>
+    {/snippet}
     
     {#if loading}
       <div class="flex items-center justify-center" style="height: {height}">
         <Spinner size="lg">Loading customer data...</Spinner>
       </div>
-    {:else if data && (Array.isArray(data) ? data.length > 0 : Object.keys(data).length > 0)}
+    {:else if data && (Array.isArray(data) ? data.length > 0 : (typeof data === 'object' && Object.keys(data).length > 0))}
       <!-- Key Metrics -->
       <div class="grid grid-cols-3 gap-4 mb-4">
         {#if selectedView === 'acquisition'}
@@ -302,13 +394,17 @@
           <div class="text-center p-2 bg-gray-50 rounded">
             <p class="text-xs text-gray-500">New This Month</p>
             <p class="text-lg font-semibold text-green-600">
-              {data[data.length - 1]?.new_customers || 0}
+              {Array.isArray(data) 
+                ? (data[data.length - 1]?.new_customers || 0)
+                : (data.new_this_month || 0)}
             </p>
           </div>
           <div class="text-center p-2 bg-gray-50 rounded">
             <p class="text-xs text-gray-500">Returning</p>
             <p class="text-lg font-semibold text-indigo-600">
-              {data[data.length - 1]?.returning_customers || 0}
+              {Array.isArray(data)
+                ? (data[data.length - 1]?.returning_customers || 0)
+                : (data.returning || 0)}
             </p>
           </div>
         {:else if selectedView === 'retention'}

@@ -7,11 +7,14 @@
     
     const dispatch = createEventDispatcher();
     
-    export let services = [];
-    export let editable = false;
-    export let onEdit = () => {};
-    export let onDelete = () => {};
-    export let onToggle = () => {};
+    let {
+        services = [],
+        editable = false,
+        onEdit = () => {},
+        onDelete = () => {},
+        onToggle = () => {},
+        ...restProps
+    } = $props();
     
     function handleBookService(service) {
         dispatch('book', service);

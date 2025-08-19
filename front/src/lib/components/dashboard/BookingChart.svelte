@@ -1,24 +1,27 @@
 <!-- src/lib/components/dashboard/BookingChart.svelte -->
 <script>
-    import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import Chart from 'chart.js/auto';
     import { formatCurrency, formatNumber, formatDecimal } from '$lib/utils/formatters';
     import Card from '../common/Card.svelte';
     import Select from '../common/Select.svelte';
     import Spinner from '../common/Spinner.svelte';
     
-    const dispatch = createEventDispatcher();
+    let {
+        data = [],
+        loading = false,
+        title = 'Booking Trends',
+        height = '300px',
+        groupBy = 'day', // 'hour', 'day', 'week', 'month'
+        ongroupbychange = () => {},
+        onmetricchange = () => {},
+        ...restProps
+    } = $props();
     
-    export let data = [];
-    export let loading = false;
-    export let title = 'Booking Trends';
-    export let height = '300px';
-    export let groupBy = 'day'; // 'hour', 'day', 'week', 'month'
-    
-    let canvas;
-    let chart;
-    let selectedGroupBy = groupBy;
-    let selectedMetric = 'count'; // 'count', 'revenue'
+    let canvas = $state();
+    let chart = $state();
+    let selectedGroupBy = $state(groupBy);
+    let selectedMetric = $state('count'); // 'count', 'revenue'
     
     const groupByOptions = [
       { value: 'hour', label: 'By Hour' },
@@ -44,11 +47,29 @@
       };
     });
     
-    $: if (chart && dataArray.length > 0) {
-      updateChart();
-    }
+    $effect(() => {
+      console.log('BookingChart $effect:', {
+        hasCanvas: !!canvas,
+        dataLength: dataArray.length,
+        hasChart: !!chart,
+        sampleData: dataArray.slice(0, 2),
+        totalBookings: dataArray.reduce((sum, d) => sum + (d.bookings || 0), 0),
+        totalRevenue: dataArray.reduce((sum, d) => sum + (d.revenue || 0), 0)
+      });
+      
+      if (canvas && dataArray.length > 0) {
+        if (chart) {
+          console.log('BookingChart: Updating existing chart');
+          updateChart();
+        } else {
+          console.log('BookingChart: Initializing new chart');
+          initChart();
+        }
+      }
+    });
     
     function initChart() {
+      if (!canvas) return;
       const ctx = canvas.getContext('2d');
       
       // Process data based on groupBy
@@ -142,7 +163,7 @@
         // Process for day/week/month grouping
         rawData.forEach(item => {
           labels.push(item.label || item.date);
-          values.push(selectedMetric === 'revenue' ? (item.revenue || 0) : (item.count || 0));
+          values.push(selectedMetric === 'revenue' ? (item.revenue || 0) : (item.bookings || item.count || 0));
         });
       }
       
@@ -172,7 +193,7 @@
           chart.destroy();
           initChart();
         }
-        dispatch('groupByChange', selectedGroupBy);
+        ongroupbychange(selectedGroupBy);
       } catch (error) {
         console.error('Error changing group by:', error);
       }
@@ -181,35 +202,37 @@
     function handleMetricChange() {
       try {
         updateChart();
-        dispatch('metricChange', selectedMetric);
+        onmetricchange(selectedMetric);
       } catch (error) {
         console.error('Error changing metric:', error);
       }
     }
     
     // Calculate stats - ensure data is always an array
-    $: dataArray = Array.isArray(data) ? data : [];
-    $: totalBookings = dataArray.reduce((sum, d) => sum + (d.count || 1), 0);
-    $: totalRevenue = dataArray.reduce((sum, d) => sum + (d.revenue || d.total_price || 0), 0);
-    $: averageBookingsPerPeriod = dataArray.length > 0 ? totalBookings / dataArray.length : 0;
+    let dataArray = $derived(Array.isArray(data) ? data : []);
+    let totalBookings = $derived(dataArray.reduce((sum, d) => sum + (d.bookings || d.count || 1), 0));
+    let totalRevenue = $derived(dataArray.reduce((sum, d) => sum + (d.revenue || d.total_price || 0), 0));
+    let averageBookingsPerPeriod = $derived(dataArray.length > 0 ? totalBookings / dataArray.length : 0);
   </script>
   
-  <Card>
-    <div slot="header" class="flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900">{title}</h3>
-      <div class="flex items-center space-x-2">
-        <Select
-          bind:value={selectedMetric}
-          options={metricOptions}
-          on:change={handleMetricChange}
-        />
-        <Select
-          bind:value={selectedGroupBy}
-          options={groupByOptions}
-          on:change={handleGroupByChange}
-        />
+  <Card >
+    {#snippet header()}
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">{title}</h3>
+        <div class="flex items-center space-x-2">
+          <Select
+            bind:value={selectedMetric}
+            options={metricOptions}
+            on:change={handleMetricChange}
+          />
+          <Select
+            bind:value={selectedGroupBy}
+            options={groupByOptions}
+            on:change={handleGroupByChange}
+          />
+        </div>
       </div>
-    </div>
+    {/snippet}
     
     {#if loading}
       <div class="flex items-center justify-center" style="height: {height}">

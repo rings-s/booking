@@ -5,8 +5,8 @@
     import { isAuthenticated } from '$lib/stores/auth';
     import { formatRelativeTime } from '$lib/utils/formatters';
     
-    let showDropdown = false;
-    let notifications = [];
+    let showDropdown = $state(false);
+    let notifications = $state([]);
     let unsubscribe = null;
     
     onMount(() => {

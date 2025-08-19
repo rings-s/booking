@@ -4,7 +4,7 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { businessAPI } from '$lib/api/businesses';
-    import { serviceAPI as servicesAPI } from '$lib/api/services';
+    import { serviceAPI } from '$lib/api/services';
     import Button from '$lib/components/common/Button.svelte';
     import Card from '$lib/components/common/Card.svelte';
     import Alert from '$lib/components/common/Alert.svelte';
@@ -54,7 +54,7 @@
     async function loadServices() {
       loading = true;
       
-      const { data, error } = await servicesAPI.getByBusiness(business?.id || slug);
+      const { data, error } = await businessAPI.getServices(slug);
       
       if (data) {
         services = sortServices(data);
@@ -83,7 +83,7 @@
     }
     
     async function handleToggleStatus(service) {
-      const { data, error } = await servicesAPI.update(service.id, {
+      const { data, error } = await serviceAPI.update(service.id, {
         is_active: !service.is_active
       });
       
@@ -97,7 +97,7 @@
     async function handleDelete() {
       if (!selectedService) return;
       
-      const { data, error } = await servicesAPI.delete(selectedService.id);
+      const { data, error } = await serviceAPI.delete(selectedService.id);
       
       if (data) {
         services = services.filter(s => s.id !== selectedService.id);
@@ -110,7 +110,7 @@
     }
     
     async function handleDuplicate(service) {
-      const { data, error } = await servicesAPI.create({
+      const { data, error } = await serviceAPI.create({
         ...service,
         name: `${service.name} (Copy)`,
         id: undefined
@@ -131,7 +131,7 @@
         display_order: index
       }));
       
-      const { error } = await servicesAPI.updateOrder(updates);
+      const { error } = await serviceAPI.updateOrder(updates);
       
       if (error) {
         toast.error('Failed to save order');

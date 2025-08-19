@@ -1,9 +1,12 @@
 <!-- src/lib/components/booking/BookingStatus.svelte -->
 <script>
-    export let status;
-    export let size = 'sm';
-    export let showIcon = true;
-    export let showLabel = true;
+    let {
+        status,
+        size = 'sm',
+        showIcon = true,
+        showLabel = true,
+        ...restProps
+    } = $props();
     
     const statusConfig = {
       pending: {
@@ -68,7 +71,7 @@
       }
     };
     
-    $: config = statusConfig[status] || statusConfig.pending;
+    let config = $derived(statusConfig[status] || statusConfig.pending);
     
     const sizes = {
       xs: {
@@ -93,7 +96,7 @@
       }
     };
     
-    $: sizeConfig = sizes[size] || sizes.sm;
+    let sizeConfig = $derived(sizes[size] || sizes.sm);
   </script>
   
   <span

@@ -3,9 +3,12 @@
   import { page } from '$app/stores';
   import { isBusinessOwner } from '$lib/stores/auth';
   
-  export let open = false;
+  let {
+    open = $bindable(false),
+    ...restProps
+  } = $props();
   
-  $: currentPath = $page.url.pathname;
+  let currentPath = $derived($page.url.pathname);
   
   const menuItems = [
     {
@@ -95,7 +98,7 @@
     
     <nav class="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
       {#each menuItems.filter(shouldShowItem) as item}
-        
+        <a
           href={item.href}
           class="
             flex items-center px-3 py-2 text-sm font-medium rounded-md

@@ -11,10 +11,13 @@
     import { reviewAPI } from '$lib/api/reviews';
     import toast from 'svelte-french-toast';
     
-    export let booking = null;
-    export let business = null;
-    export let review = null; // For editing
-    export let loading = false;
+    let {
+        booking = null,
+        business = null,
+        review = null, // For editing
+        loading = false,
+        ...restProps
+    } = $props();
     
     const dispatch = createEventDispatcher();
     
@@ -151,14 +154,16 @@
     }
     
     // Calculate overall rating from category ratings
-    $: if (Object.values(categoryRatings).some(r => r > 0)) {
-      const validRatings = Object.values(categoryRatings).filter(r => r > 0);
-      if (validRatings.length > 0) {
-        formData.rating = Math.round(validRatings.reduce((a, b) => a + b, 0) / validRatings.length);
+    $effect(() => {
+      if (Object.values(categoryRatings).some(r => r > 0)) {
+        const validRatings = Object.values(categoryRatings).filter(r => r > 0);
+        if (validRatings.length > 0) {
+          formData.rating = Math.round(validRatings.reduce((a, b) => a + b, 0) / validRatings.length);
+        }
       }
-    }
+    });
     
-    $: suggestedFeedback = quickFeedback[formData.rating] || [];
+    let suggestedFeedback = $derived(quickFeedback[formData.rating] || []);
   </script>
   
   <form on:submit|preventDefault={handleSubmit} class="max-w-2xl mx-auto space-y-6">

@@ -1,10 +1,16 @@
 <!-- src/lib/components/common/Avatar.svelte -->
 <script>
-    export let src = '';
-    export let alt = '';
-    export let name = '';
-    export let size = 'md';
-    export let rounded = 'full';
+    let {
+        src = '',
+        alt = '',
+        name = '',
+        size = 'md',
+        rounded = 'full',
+        ...restProps
+    } = $props();
+    
+    let imageError = $state(false);
+    let imageSrc = $derived(imageError ? '' : src);
     
     const sizes = {
       xs: 'h-6 w-6 text-xs',
@@ -33,12 +39,12 @@
   </script>
   
   <div class="{sizes[size]} {roundeds[rounded]} overflow-hidden bg-gray-200 relative">
-    {#if src}
+    {#if imageSrc}
       <img
-        {src}
+        src={imageSrc}
         {alt}
         class="h-full w-full object-cover"
-        on:error={() => src = ''}
+        on:error={() => imageError = true}
       />
     {:else}
       <div class="h-full w-full bg-indigo-600 flex items-center justify-center text-white font-medium">

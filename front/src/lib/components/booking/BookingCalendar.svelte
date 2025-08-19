@@ -1,6 +1,5 @@
 <!-- src/lib/components/booking/BookingCalendar.svelte -->
 <script>
-    import { createEventDispatcher } from 'svelte';
     import { 
       getCalendarDays, 
       isDateBookable, 
@@ -10,26 +9,30 @@
     } from '$lib/utils/dates';
     import { format, isSameDay, isToday, isPast } from 'date-fns';
     
-    export let selectedDate = null;
-    export let availableDates = [];
-    export let businessHours = [];
-    export let minDate = new Date();
-    export let maxDate = null;
-    export let loading = false;
+    let {
+        selectedDate = $bindable(null),
+        availableDates = [],
+        businessHours = [],
+        minDate = new Date(),
+        maxDate = null,
+        loading = false,
+        ondateselect = () => {},
+        ...restProps
+    } = $props();
     
-    const dispatch = createEventDispatcher();
-    
-    let currentMonth = new Date();
-    let calendarDays = getCalendarDays(currentMonth);
+    let currentMonth = $state(new Date());
+    let calendarDays = $state(getCalendarDays(currentMonth));
     
     // Parse available dates if they come from API response
-    $: parsedAvailableDates = Array.isArray(availableDates) ? 
+    let parsedAvailableDates = $derived(Array.isArray(availableDates) ? 
       (availableDates.length > 0 && typeof availableDates[0] === 'object' && availableDates[0].date ? 
         parseAvailableDates({ available_dates: availableDates }) : 
         availableDates.map(d => ({ date: d, dateString: d.toISOString().split('T')[0] }))
-      ) : [];
+      ) : []);
     
-    $: calendarDays = getCalendarDays(currentMonth);
+    $effect(() => {
+      calendarDays = getCalendarDays(currentMonth);
+    });
     
     function previousMonth() {
       const newMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1);
@@ -53,7 +56,7 @@
     function selectDate(date) {
       if (!isDateDisabledForBooking(date)) {
         selectedDate = date;
-        dispatch('select', date);
+        ondateselect(date);
       }
     }
     

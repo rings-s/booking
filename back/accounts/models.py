@@ -44,9 +44,9 @@ class User(AbstractBaseUser, PermissionsMixin):
 class SubscriptionPlan(models.Model):
     PLAN_TYPES = [
         ('free', 'Free'),
-        ('basic', 'Basic'),
-        ('premium', 'Premium'),
-        ('enterprise', 'Enterprise'),
+        ('starter', 'Starter'),
+        ('professional', 'Professional'),
+        ('business', 'Business'),
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -54,16 +54,17 @@ class SubscriptionPlan(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stripe_price_id = models.CharField(max_length=100, blank=True, null=True)
     
-    # Features
+    # Core Features (simplified for our booking system)
     max_businesses = models.IntegerField(default=1)
     max_services = models.IntegerField(default=5)
-    max_bookings_per_month = models.IntegerField(default=100)
+    max_bookings_per_month = models.IntegerField(default=50)  # Keep original naming
     max_staff_accounts = models.IntegerField(default=1)
     max_storage_gb = models.IntegerField(default=1)
+    
+    # Features we actually have
     analytics_enabled = models.BooleanField(default=False)
     priority_support = models.BooleanField(default=False)
     custom_branding = models.BooleanField(default=False)
-    api_access = models.BooleanField(default=False)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

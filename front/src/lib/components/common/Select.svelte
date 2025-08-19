@@ -1,14 +1,17 @@
 <!-- src/lib/components/common/Select.svelte -->
 <script>
-    export let label = '';
-    export let value = '';
-    export let options = [];
-    export let placeholder = 'Select an option';
-    export let error = '';
-    export let required = false;
-    export let disabled = false;
-    export let name = '';
-    export let id = name || Math.random().toString(36).substr(2, 9);
+    let {
+        label = '',
+        value = $bindable(''),
+        options = [],
+        placeholder = 'Select an option',
+        error = '',
+        required = false,
+        disabled = false,
+        name = '',
+        id = name || Math.random().toString(36).substr(2, 9),
+        ...restProps
+    } = $props();
     
     function handleChange(event) {
       value = event.target.value;

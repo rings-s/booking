@@ -7,11 +7,14 @@
     import { subscriptionAPI } from '$lib/api/subscriptions';
     import toast from 'svelte-french-toast';
     
-    export let plans = [];
-    export let currentPlanId = null;
-    export let loading = false;
-    export let billing = 'monthly'; // 'monthly', 'yearly'
-    export let showComparison = false;
+    let {
+        plans = [],
+        currentPlanId = null,
+        loading = false,
+        billing = 'monthly', // 'monthly', 'yearly'
+        showComparison = false,
+        ...restProps
+    } = $props();
     
     const dispatch = createEventDispatcher();
     
@@ -59,11 +62,11 @@
     }
     
     // Yearly pricing calculation (20% discount)
-    $: displayPlans = Array.isArray(plans) ? plans.map(plan => ({
+    let displayPlans = $derived(Array.isArray(plans) ? plans.map(plan => ({
       ...plan,
       price: billing === 'yearly' ? plan.price * 12 * 0.8 : plan.price,
       originalPrice: billing === 'yearly' ? plan.price * 12 : null
-    })) : [];
+    })) : []);
     
     // Feature comparison data
     const comparisonFeatures = [

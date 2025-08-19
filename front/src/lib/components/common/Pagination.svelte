@@ -1,34 +1,35 @@
 <!-- src/lib/components/common/Pagination.svelte -->
 <script>
   import Button from './Button.svelte';
-  import { createEventDispatcher } from 'svelte';
 
   // Public props
-  export let page = 1;               // 1-indexed
-  export let totalPages = undefined; // optional when using totalItems + perPage
-  export let totalItems = undefined; // optional
-  export let perPage = undefined;    // optional
-  export let siblingCount = 1;       // pages around the current
-  export let boundaryCount = 1;      // pages at the edges
-  export let compact = false;        // force compact layout
-  export let showSummary = true;     // show "Page x of y"
-
-  const dispatch = createEventDispatcher();
+  let {
+    page = 1,               // 1-indexed
+    totalPages = undefined, // optional when using totalItems + perPage
+    totalItems = undefined, // optional
+    perPage = undefined,    // optional
+    siblingCount = 1,       // pages around the current
+    boundaryCount = 1,      // pages at the edges
+    compact = false,        // force compact layout
+    showSummary = true,     // show "Page x of y"
+    onchange = () => {},    // callback for page changes
+    ...restProps
+  } = $props();
 
   // Derived values
-  $: pagesCount = totalPages ?? (totalItems && perPage ? Math.max(1, Math.ceil(totalItems / perPage)) : 1);
-  $: current = clamp(page, 1, pagesCount);
+  let pagesCount = $derived(totalPages ?? (totalItems && perPage ? Math.max(1, Math.ceil(totalItems / perPage)) : 1));
+  let current = $derived(clamp(page, 1, pagesCount));
 
   function clamp(n, min, max) { return Math.min(Math.max(n, min), max); }
   function range(start, end) { return start > end ? [] : Array.from({ length: end - start + 1 }, (_, i) => start + i); }
 
   function setPage(p) {
     const next = clamp(p, 1, pagesCount);
-    if (next !== current) dispatch('change', { page: next });
+    if (next !== current) onchange({ page: next });
   }
 
   const ELLIPSIS = '…';
-  $: items = buildPagination(current, pagesCount, siblingCount, boundaryCount);
+  let items = $derived(buildPagination(current, pagesCount, siblingCount, boundaryCount));
 
   function buildPagination(current, total, siblings = 1, boundaries = 1) {
     if (!total || total <= 1) return [1];

@@ -1,9 +1,12 @@
 <script>
   import { createEventDispatcher } from 'svelte';
 
-  export let businesses = [];
-  export let selectedId = null;
-  export let className = '';
+  let {
+    businesses = [],
+    selectedId = null,
+    className = '',
+    ...restProps
+  } = $props();
 
   const dispatch = createEventDispatcher();
 

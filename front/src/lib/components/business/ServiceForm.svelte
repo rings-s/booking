@@ -1,6 +1,5 @@
 <!-- src/lib/components/business/ServiceForm.svelte -->
 <script>
-    import { createEventDispatcher } from 'svelte';
     import Input from '../common/Input.svelte';
     import Select from '../common/Select.svelte';
     import Button from '../common/Button.svelte';
@@ -10,13 +9,16 @@
     import { DURATIONS } from '$lib/utils/constants';
     import toast from 'svelte-french-toast';
     
-    export let service = {};
-    export let businessId;
-    export let loading = false;
+    let {
+        service = {},
+        businessId,
+        loading = false,
+        onsubmit = () => {},
+        oncancel = () => {},
+        ...restProps
+    } = $props();
     
-    const dispatch = createEventDispatcher();
-    
-    let formData = {
+    let formData = $state({
       name: service.name || '',
       description: service.description || '',
       duration_minutes: service.duration_minutes || 30,
@@ -36,10 +38,10 @@
       available_days: service.available_days || [0, 1, 2, 3, 4, 5, 6],
       min_advance_hours: service.min_advance_hours || 0,
       max_advance_days: service.max_advance_days || 90
-    };
+    });
     
-    let errors = {};
-    let showAdvancedSettings = false;
+    let errors = $state({});
+    let showAdvancedSettings = $state(false);
     
     const bufferOptions = [
       { value: 0, label: 'No buffer' },
@@ -81,17 +83,19 @@
       }
       
       errors = {};
-      dispatch('submit', formData);
+      onsubmit(formData);
     }
     
     function handleCancel() {
-      dispatch('cancel');
+      oncancel();
     }
     
     // Auto-calculate deposit amount as percentage
-    $: if (formData.requires_deposit && !formData.deposit_amount && formData.price) {
-      formData.deposit_amount = Math.round(formData.price * 0.2); // 20% default
-    }
+    $effect(() => {
+      if (formData.requires_deposit && !formData.deposit_amount && formData.price) {
+        formData.deposit_amount = Math.round(formData.price * 0.2); // 20% default
+      }
+    });
   </script>
   
   <form on:submit|preventDefault={handleSubmit} class="space-y-6">
@@ -189,17 +193,19 @@
     </Card>
     
     <!-- Advanced Settings -->
-    <Card>
-      <div slot="header" class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-900">Advanced Settings</h3>
-        <button
-          type="button"
-          class="text-sm text-indigo-600 hover:text-indigo-500"
-          on:click={() => showAdvancedSettings = !showAdvancedSettings}
-        >
-          {showAdvancedSettings ? 'Hide' : 'Show'}
-        </button>
-      </div>
+    <Card {header}>
+      {#snippet header()}
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900">Advanced Settings</h3>
+          <button
+            type="button"
+            class="text-sm text-indigo-600 hover:text-indigo-500"
+            on:click={() => showAdvancedSettings = !showAdvancedSettings}
+          >
+            {showAdvancedSettings ? 'Hide' : 'Show'}
+          </button>
+        </div>
+      {/snippet}
       
       {#if showAdvancedSettings}
         <div class="space-y-6">

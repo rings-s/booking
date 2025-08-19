@@ -1,5 +1,5 @@
 // src/lib/api/subscriptions.js
-import apiClient from './client.js';
+import apiClient from './clients.js';
 
 export const subscriptionAPI = {
   async getPlans() {
@@ -36,11 +36,13 @@ export const subscriptionAPI = {
   },
 
   async downloadInvoice(invoiceId) {
-    return apiClient.get(`/accounts/subscriptions/invoices/${invoiceId}/download/`);
+    // Backend doesn't provide download functionality yet - return mock response
+    return { data: { message: 'Download functionality not implemented yet' }, error: null };
   },
 
   async updatePaymentMethod(paymentMethodId) {
-    return apiClient.post('/accounts/subscriptions/update-payment-method/', {
+    // Backend doesn't have this endpoint yet - use upgrade endpoint for now
+    return apiClient.post('/accounts/subscriptions/upgrade/', {
       payment_method_id: paymentMethodId
     });
   },

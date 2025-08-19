@@ -16,7 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'first_name', 'last_name', 'full_name', 
-                 'user_type', 'email_verified', 'date_joined']
+                 'user_type', 'email_verified', 'date_joined', 'is_staff', 'is_superuser']
         read_only_fields = ['id', 'email_verified', 'date_joined']
 
 
@@ -43,194 +43,62 @@ class RegisterSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
+    remember_me = serializers.BooleanField(required=False, default=False)
     
     def validate(self, attrs):
+        import logging
+        logger = logging.getLogger(__name__)
+        
         email = attrs.get('email')
         password = attrs.get('password')
         
-        if email and password:
-            user = authenticate(email=email, password=password)
-            if not user:
-                raise serializers.ValidationError('Invalid credentials')
-            if not user.is_active:
-                raise serializers.ValidationError('Account is disabled')
-        else:
+        logger.info(f"Login validation attempt for email: {email}")
+        
+        if not email or not password:
             raise serializers.ValidationError('Email and password are required')
         
+        # Check if user exists first
+        try:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            user_exists = User.objects.filter(email=email).exists()
+            logger.info(f"User exists check for {email}: {user_exists}")
+        except Exception as e:
+            logger.error(f"Error checking user existence: {str(e)}")
+        
+        # Use authenticate() with proper parameters for custom User model
+        request = self.context.get('request')
+        logger.info(f"Attempting authentication for {email}")
+        user = authenticate(request=request, username=email, password=password)
+        
+        logger.info(f"Authentication result for {email}: {user}")
+        
+        if not user:
+            logger.error(f"Authentication failed for {email}")
+            raise serializers.ValidationError('Invalid email or password')
+        
+        if not user.is_active:
+            logger.error(f"User {email} is not active")
+            raise serializers.ValidationError('Account is disabled')
+        
+        logger.info(f"Authentication successful for {email}")
         attrs['user'] = user
         return attrs
 
 
 class GoogleLoginSerializer(serializers.Serializer):
+    """Simplified Google login using django-allauth integration"""
     access_token = serializers.CharField()
     
     def validate(self, attrs):
         access_token = attrs.get('access_token')
         
         if not access_token:
-            raise serializers.ValidationError({
-                'access_token': 'Google access token is required'
-            })
+            raise serializers.ValidationError('Google access token is required')
         
         try:
-            # Handle different token types with better error handling
-            google_data = self._verify_google_token(access_token)
-            
-            # Extract user information
-            email = google_data.get('email')
-            first_name = google_data.get('given_name', '').strip()
-            last_name = google_data.get('family_name', '').strip()
-            email_verified = google_data.get('email_verified', False)
-            
-            # Validate email
-            if not email:
-                raise serializers.ValidationError({
-                    'email': 'Email address not provided by Google'
-                })
-            
-            if not email_verified:
-                raise serializers.ValidationError({
-                    'email': 'Email address not verified by Google'
-                })
-            
-            # Get or create user with better error handling
-            user = self._get_or_create_user(email, first_name, last_name)
-            
-            attrs['user'] = user
-            attrs['google_data'] = google_data
-            
-        except serializers.ValidationError:
-            raise
-        except requests.exceptions.Timeout:
-            raise serializers.ValidationError({
-                'network': 'Google authentication timed out. Please try again.'
-            })
-        except requests.exceptions.ConnectionError:
-            raise serializers.ValidationError({
-                'network': 'Unable to connect to Google services. Please check your connection.'
-            })
-        except requests.exceptions.RequestException as e:
-            raise serializers.ValidationError({
-                'network': f'Network error during Google authentication: {str(e)}'
-            })
-        except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f'Unexpected error in Google OAuth: {str(e)}', exc_info=True)
-            raise serializers.ValidationError({
-                'unknown': 'An unexpected error occurred during Google authentication'
-            })
-        
-        return attrs
-    
-    def _verify_google_token(self, access_token):
-        """Verify Google token and return user data"""
-        if access_token.startswith('eyJ'):
-            # JWT token - verify with Google's public keys
-            return self._verify_jwt_token(access_token)
-        else:
-            # Access token - verify with Google userinfo endpoint
-            return self._verify_access_token(access_token)
-    
-    def _verify_jwt_token(self, jwt_token):
-        """Verify JWT token with Google's public keys"""
-        import jwt
-        from jwt.algorithms import RSAAlgorithm
-        import requests
-        
-        try:
-            # Get Google's public keys with timeout
-            jwks_response = requests.get(
-                'https://www.googleapis.com/oauth2/v3/certs',
-                timeout=10
-            )
-            
-            if jwks_response.status_code != 200:
-                raise serializers.ValidationError({
-                    'token': 'Unable to verify token with Google'
-                })
-            
-            jwks = jwks_response.json()
-            
-            # Decode token header to get the key ID
-            try:
-                unverified_header = jwt.get_unverified_header(jwt_token)
-            except jwt.DecodeError:
-                raise serializers.ValidationError({
-                    'token': 'Invalid JWT token format'
-                })
-            
-            # Find the correct key
-            rsa_key = None
-            for key in jwks.get('keys', []):
-                if key.get('kid') == unverified_header.get('kid'):
-                    rsa_key = {
-                        'kty': key.get('kty'),
-                        'kid': key.get('kid'),
-                        'use': key.get('use'),
-                        'n': key.get('n'),
-                        'e': key.get('e')
-                    }
-                    break
-            
-            if not rsa_key:
-                raise serializers.ValidationError({
-                    'token': 'Unable to find matching verification key'
-                })
-            
-            # Verify and decode token
-            try:
-                public_key = RSAAlgorithm.from_jwk(rsa_key)
-                client_id = getattr(settings, 'GOOGLE_CLIENT_ID', None)
-                
-                if not client_id:
-                    raise serializers.ValidationError({
-                        'configuration': 'Google Client ID not configured'
-                    })
-                
-                payload = jwt.decode(
-                    jwt_token,
-                    public_key,
-                    algorithms=['RS256'],
-                    audience=client_id,
-                    issuer=['https://accounts.google.com', 'accounts.google.com']
-                )
-                
-                return {
-                    'email': payload.get('email'),
-                    'given_name': payload.get('given_name', ''),
-                    'family_name': payload.get('family_name', ''),
-                    'picture': payload.get('picture', ''),
-                    'email_verified': payload.get('email_verified', False)
-                }
-                
-            except jwt.ExpiredSignatureError:
-                raise serializers.ValidationError({
-                    'token': 'Google token has expired. Please sign in again.'
-                })
-            except jwt.InvalidAudienceError:
-                raise serializers.ValidationError({
-                    'token': 'Invalid token audience'
-                })
-            except jwt.InvalidIssuerError:
-                raise serializers.ValidationError({
-                    'token': 'Invalid token issuer'
-                })
-            except jwt.InvalidTokenError as e:
-                raise serializers.ValidationError({
-                    'token': f'Invalid JWT token: {str(e)}'
-                })
-                
-        except requests.exceptions.RequestException:
-            raise serializers.ValidationError({
-                'token': 'Unable to verify token with Google servers'
-            })
-    
-    def _verify_access_token(self, access_token):
-        """Verify access token with Google userinfo endpoint"""
-        import requests
-        
-        try:
+            # Use Google userinfo endpoint to get user data
+            import requests
             response = requests.get(
                 'https://www.googleapis.com/oauth2/v2/userinfo',
                 headers={'Authorization': f'Bearer {access_token}'},
@@ -238,62 +106,47 @@ class GoogleLoginSerializer(serializers.Serializer):
             )
             
             if response.status_code == 401:
-                raise serializers.ValidationError({
-                    'token': 'Invalid or expired Google access token'
-                })
+                raise serializers.ValidationError('Invalid or expired Google token')
             elif response.status_code != 200:
-                raise serializers.ValidationError({
-                    'token': f'Google API error (status: {response.status_code})'
-                })
+                raise serializers.ValidationError('Failed to verify Google token')
             
-            return response.json()
+            google_data = response.json()
+            
+            # Extract user information
+            email = google_data.get('email')
+            first_name = google_data.get('given_name', '').strip()
+            last_name = google_data.get('family_name', '').strip()
+            
+            if not email:
+                raise serializers.ValidationError('Email not provided by Google')
+            
+            # Get or create user
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    'first_name': first_name or 'User',
+                    'last_name': last_name or '',
+                    'email_verified': True,
+                    'user_type': 'customer'
+                }
+            )
+            
+            # Update existing user info if needed
+            if not created and not user.email_verified:
+                user.email_verified = True
+                user.save(update_fields=['email_verified'])
+            
+            attrs['user'] = user
             
         except requests.exceptions.RequestException:
-            raise serializers.ValidationError({
-                'token': 'Unable to verify access token with Google'
-            })
-    
-    def _get_or_create_user(self, email, first_name, last_name):
-        """Get existing user or create new one"""
-        try:
-            user = User.objects.get(email=email)
-            
-            # Update user info if needed and user hasn't set custom info
-            updated_fields = []
-            if not user.first_name and first_name:
-                user.first_name = first_name
-                updated_fields.append('first_name')
-            if not user.last_name and last_name:
-                user.last_name = last_name
-                updated_fields.append('last_name')
-            if not user.email_verified:
-                user.email_verified = True
-                updated_fields.append('email_verified')
-            
-            if updated_fields:
-                user.save(update_fields=updated_fields)
-                
-            return user
-            
-        except User.DoesNotExist:
-            # Create new user
-            try:
-                user = User.objects.create_user(
-                    email=email,
-                    first_name=first_name or 'User',
-                    last_name=last_name or '',
-                    email_verified=True,
-                    user_type='customer'
-                )
-                return user
-                
-            except Exception as e:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f'Failed to create user {email}: {str(e)}', exc_info=True)
-                raise serializers.ValidationError({
-                    'user_creation': 'Failed to create user account'
-                })
+            raise serializers.ValidationError('Unable to connect to Google services')
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f'Google OAuth error: {str(e)}', exc_info=True)
+            raise serializers.ValidationError('Google authentication failed')
+        
+        return attrs
 
 
 class SubscriptionPlanSerializer(serializers.ModelSerializer):

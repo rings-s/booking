@@ -8,14 +8,17 @@
     import { WEEKDAYS, TIME_SLOTS } from '$lib/utils/constants';
     import toast from 'svelte-french-toast';
     
-    export let hours = [];
-    export let editable = false;
-    export let loading = false;
+    let {
+        hours = [],
+        editable = false,
+        loading = false,
+        ...restProps
+    } = $props();
     
     const dispatch = createEventDispatcher();
     
     // Initialize hours for all weekdays
-    let businessHours = WEEKDAYS.map(day => {
+    let businessHours = $state(WEEKDAYS.map(day => {
       const existing = hours.find(h => h.weekday === day.value);
       return {
         weekday: day.value,
@@ -26,10 +29,10 @@
         break_start: existing?.break_start || null,
         break_end: existing?.break_end || null
       };
-    });
+    }));
     
-    let hasUnsavedChanges = false;
-    let showBreakTimes = false;
+    let hasUnsavedChanges = $state(false);
+    let showBreakTimes = $state(false);
     
     function handleSave() {
       // Validate times
@@ -118,8 +121,9 @@
   </script>
   
   <Card>
-    <div slot="header" class="flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900">Business Hours</h3>
+    {#snippet header()}
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">Business Hours</h3>
       {#if editable}
         <div class="flex items-center gap-2">
           <Button variant="outline" size="sm" on:click={setDefaultHours}>
@@ -135,7 +139,8 @@
           </label>
         </div>
       {/if}
-    </div>
+      </div>
+    {/snippet}
     
     <div class="space-y-3">
       {#if hasUnsavedChanges}

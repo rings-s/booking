@@ -1,6 +1,6 @@
 <!-- src/lib/components/review/ReviewList.svelte -->
 <script>
-    import { createEventDispatcher, onMount } from 'svelte';
+    import { onMount } from 'svelte';
     import { reviewAPI } from '$lib/api/reviews';
     import ReviewCard from './ReviewCard.svelte';
     import StarRating from './StarRating.svelte';
@@ -9,30 +9,37 @@
     import Spinner from '../common/Spinner.svelte';
     import Card from '../common/Card.svelte';
     
-    export let businessId = null;
-    export let reviews = [];
-    export let loading = false;
-    export let showActions = false;
-    export let isBusinessOwner = false;
-    export let showStats = true;
-    export let compact = false;
+    let {
+        businessId = null,
+        reviews = [],
+        loading = false,
+        showActions = false,
+        isBusinessOwner = false,
+        showStats = true,
+        compact = false,
+        onresponded = () => {},
+        onfeatured = () => {},
+        onedit = () => {},
+        ondelete = () => {},
+        onshare = () => {},
+        onviewimage = () => {},
+        ...restProps
+    } = $props();
     
-    const dispatch = createEventDispatcher();
+    let stats = $state(null);
+    let filteredReviews = $state([]);
+    let sortBy = $state('recent');
+    let filterRating = $state('');
+    let filterVerified = $state(false);
+    let filterWithPhotos = $state(false);
+    let currentPage = $state(1);
+    let reviewsPerPage = $state(10);
     
-    let stats = null;
-    let filteredReviews = [];
-    let sortBy = 'recent';
-    let filterRating = '';
-    let filterVerified = false;
-    let filterWithPhotos = false;
-    let currentPage = 1;
-    let reviewsPerPage = 10;
-    
-    $: totalPages = Math.ceil(filteredReviews.length / reviewsPerPage);
-    $: paginatedReviews = filteredReviews.slice(
+    let totalPages = $derived(Math.ceil(filteredReviews.length / reviewsPerPage));
+    let paginatedReviews = $derived(filteredReviews.slice(
       (currentPage - 1) * reviewsPerPage,
       currentPage * reviewsPerPage
-    );
+    ));
     
     onMount(async () => {
       if (businessId && showStats) {
@@ -44,7 +51,9 @@
       filterAndSortReviews();
     });
     
-    $: filterAndSortReviews(), reviews, sortBy, filterRating, filterVerified, filterWithPhotos;
+    $effect(() => {
+      filterAndSortReviews();
+    });
     
     function filterAndSortReviews() {
       let filtered = [...reviews];
@@ -228,12 +237,12 @@
             {showActions}
             {isBusinessOwner}
             {compact}
-            on:responded
-            on:featured
-            on:edit
-            on:delete
-            on:share
-            on:viewImage
+            onresponded={onresponded}
+            onfeatured={onfeatured}
+            onedit={onedit}
+            ondelete={ondelete}
+            onshare={onshare}
+            onviewimage={onviewimage}
           />
         {/each}
       </div>

@@ -1,14 +1,15 @@
 <!-- src/lib/components/common/Alert.svelte -->
 <script>
-    import { createEventDispatcher } from 'svelte';
-    
-    export let type = 'info';
-    export let title = '';
-    export let message = '';
-    export let dismissible = false;
-    export let icon = true;
-    
-    const dispatch = createEventDispatcher();
+    let {
+        type = 'info',
+        title = '',
+        message = '',
+        dismissible = false,
+        icon = true,
+        children,
+        ondismiss = () => {},
+        ...restProps
+    } = $props();
     
     const types = {
       success: {
@@ -37,10 +38,10 @@
       }
     };
     
-    $: style = types[type];
+    let style = $derived(types[type]);
     
     function dismiss() {
-      dispatch('dismiss');
+      ondismiss();
     }
   </script>
   
@@ -63,7 +64,7 @@
             {message}
           </div>
         {/if}
-        <slot />
+        {@render children?.()}
       </div>
       
       {#if dismissible}

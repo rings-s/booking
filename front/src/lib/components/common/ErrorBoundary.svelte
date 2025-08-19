@@ -6,18 +6,22 @@
   import Button from './Button.svelte';
   import Card from './Card.svelte';
   
-  export let fallback = null;
-  export let onError = null;
-  export let showDetails = false;
-  export let showReload = true;
-  export let customMessage = '';
+  let {
+    fallback = null,
+    onError = null,
+    showDetails = false,
+    showReload = true,
+    customMessage = '',
+    children,
+    ...restProps
+  } = $props();
   
   const dispatch = createEventDispatcher();
   
-  let hasError = false;
-  let error = null;
-  let errorInfo = null;
-  let componentStack = '';
+  let hasError = $state(false);
+  let error = $state(null);
+  let errorInfo = $state(null);
+  let componentStack = $state('');
   
   // Global error handler
   onMount(() => {
@@ -202,8 +206,8 @@
     return 'medium';
   }
   
-  $: errorSeverity = getErrorSeverity(error);
-  $: recoverable = isRecoverable(error);
+  let errorSeverity = $derived(getErrorSeverity(error));
+  let recoverable = $derived(isRecoverable(error));
 </script>
 
 {#if hasError}
@@ -323,5 +327,5 @@
   </div>
 {:else}
   <!-- Render children when no error -->
-  <slot />
+  {@render children?.()}
 {/if}

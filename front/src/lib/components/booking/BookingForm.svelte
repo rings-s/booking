@@ -1,6 +1,6 @@
 <!-- src/lib/components/booking/BookingForm.svelte -->
 <script>
-    import { createEventDispatcher, onMount } from 'svelte';
+    import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { bookingStore } from '$lib/stores/booking';
     import { businessAPI } from '$lib/api/businesses';
@@ -15,19 +15,22 @@
     import { validateForm, bookingSchema } from '$lib/utils/validators';
     import toast from 'svelte-french-toast';
     
-    export let business;
-    export let service = null;
-    export let booking = null;
-    export let customerInfo = null;
+    let {
+        business,
+        service = null,
+        booking = null,
+        customerInfo = null,
+        onsubmit = () => {},
+        oncancel = () => {},
+        ...restProps
+    } = $props();
     
-    const dispatch = createEventDispatcher();
-    
-    let currentStep = 1;
-    let loading = false;
-    let loadingSlots = false;
+    let currentStep = $state(1);
+    let loading = $state(false);
+    let loadingSlots = $state(false);
     let loadingDates = false;
-    let errors = {};
-    let termsAccepted = false;
+    let errors = $state({});
+    let termsAccepted = $state(false);
     
     let formData = {
       business_id: business.id,
@@ -41,12 +44,12 @@
       customer_phone: customerInfo?.phone || ''
     };
     
-    let selectedDate = null;
-    let selectedSlot = null;
-    let availableSlots = [];
-    let availableDates = [];
-    let selectedService = service || booking?.service || null;
-    let services = [];
+    let selectedDate = $state(null);
+    let selectedSlot = $state(null);
+    let availableSlots = $state([]);
+    let availableDates = $state([]);
+    let selectedService = $state(service || booking?.service || null);
+    let services = $state([]);
     let maxDate = new Date();
     maxDate.setDate(maxDate.getDate() + 90); // Allow booking up to 90 days in advance
     
@@ -178,7 +181,7 @@
         toast.error(error);
       } else {
         toast.success(booking ? 'Booking updated successfully!' : 'Booking created successfully!');
-        dispatch('success', data);
+        onsubmit(data);
         
         // Redirect to booking details
         goto(`/bookings/${data.id}`);
@@ -202,9 +205,9 @@
     }
     
     // Calculate total with any additional fees
-    $: subtotal = selectedService?.price || 0;
-    $: serviceFee = subtotal * 0.05; // 5% service fee
-    $: total = subtotal + serviceFee;
+    let subtotal = $derived(selectedService?.price || 0);
+    let serviceFee = $derived(subtotal * 0.05); // 5% service fee
+    let total = $derived(subtotal + serviceFee);
   </script>
   
   <div class="max-w-4xl mx-auto">

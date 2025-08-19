@@ -1,16 +1,19 @@
 <!-- src/lib/components/common/Input.svelte -->
 <script>
-    export let type = 'text';
-    export let label = '';
-    export let value = '';
-    export let placeholder = '';
-    export let error = '';
-    export let required = false;
-    export let disabled = false;
-    export let readonly = false;
-    export let autocomplete = '';
-    export let name = '';
-    export let id = name || Math.random().toString(36).substr(2, 9);
+    let {
+        type = 'text',
+        label = '',
+        value = $bindable(''),
+        placeholder = '',
+        error = '',
+        required = false,
+        disabled = false,
+        readonly = false,
+        autocomplete = '',
+        name = '',
+        id = name || Math.random().toString(36).substr(2, 9),
+        ...restProps
+    } = $props();
     
     function handleInput(event) {
       value = event.target.value;

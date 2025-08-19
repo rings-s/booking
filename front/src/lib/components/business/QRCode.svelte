@@ -7,18 +7,21 @@
     import Input from '../common/Input.svelte';
     import toast from 'svelte-french-toast';
     
-    export let business;
-    export let size = 256;
-    export let showCustomization = false;
+    let {
+        business,
+        size = 256,
+        showCustomization = false,
+        ...restProps
+    } = $props();
     
-    let canvas;
-    let qrCodeDataUrl = '';
-    let bookingUrl = '';
-    let customUrl = '';
-    let useCustomUrl = false;
+    let canvas = $state();
+    let qrCodeDataUrl = $state('');
+    let bookingUrl = $state('');
+    let customUrl = $state('');
+    let useCustomUrl = $state(false);
     
     // QR Code customization options
-    let options = {
+    let options = $state({
       width: size,
       margin: 2,
       color: {
@@ -26,11 +29,11 @@
         light: '#FFFFFF'
       },
       errorCorrectionLevel: 'M'
-    };
+    });
     
-    let darkColor = '#000000';
-    let lightColor = '#FFFFFF';
-    let includelogo = false;
+    let darkColor = $state('#000000');
+    let lightColor = $state('#FFFFFF');
+    let includelogo = $state(false);
     
     onMount(() => {
       generateQRCode();
@@ -193,24 +196,32 @@
       }
     }
     
-    $: if (darkColor || lightColor || useCustomUrl) {
-      generateQRCode();
-    }
+    $effect(() => {
+      if (darkColor || lightColor || useCustomUrl) {
+        generateQRCode();
+      }
+    });
   </script>
   
   <Card>
-    <div slot="header" class="flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900">Booking QR Code</h3>
-      {#if showCustomization}
-        <button
-          type="button"
-          class="text-sm text-indigo-600 hover:text-indigo-500"
-          on:click={() => showCustomization = !showCustomization}
-        >
-          Customize
-        </button>
-      {/if}
-    </div>
+    {#snippet header()}
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">Booking QR Code</h3>
+        {#if showCustomization}
+          <button
+            type="button"
+            class="text-sm text-indigo-600 hover:text-indigo-500"
+            on:click={() => showCustomization = !showCustomization}
+          >
+            Customize
+          </button>
+        {/if}
+      </div>
+    {/snippet}
+    
+    {#snippet footer()}
+      <!-- Empty footer -->
+    {/snippet}
     
     <div class="flex flex-col items-center">
       <!-- QR Code Display -->

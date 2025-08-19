@@ -19,7 +19,7 @@
         { name: 'For Business', href: '/business' },
         { name: 'For Customers', href: '/customers' },
         { name: 'Pricing', href: '/pricing' },
-        { name: 'API', href: '/api' }
+        { name: 'Developers', href: '/developers' }
       ]
     };
   </script>

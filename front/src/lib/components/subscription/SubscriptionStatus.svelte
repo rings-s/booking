@@ -5,14 +5,18 @@
     import Button from '../common/Button.svelte';
     import Alert from '../common/Alert.svelte';
     import Card from '../common/Card.svelte';
+    import Modal from '../common/Modal.svelte';
     import { subscriptionAPI } from '$lib/api/subscriptions';
     import { goto } from '$app/navigation';
     import toast from 'svelte-french-toast';
     
-    export let subscription = null;
-    export let usage = null;
-    export let loading = false;
-    export let showActions = true;
+    let {
+        subscription = null,
+        usage = null,
+        loading = false,
+        showActions = true,
+        ...restProps
+    } = $props();
     
     let cancelModalOpen = false;
     let cancelling = false;
@@ -78,36 +82,38 @@
     }
     
     // Calculate days until renewal/expiry
-    $: daysUntilRenewal = subscription?.current_period_end 
+    let daysUntilRenewal = $derived(subscription?.current_period_end 
       ? Math.ceil((new Date(subscription.current_period_end) - new Date()) / (1000 * 60 * 60 * 24))
-      : 0;
+      : 0);
     
-    $: isExpiringSoon = daysUntilRenewal > 0 && daysUntilRenewal <= 7;
-    $: isExpired = subscription?.status === 'expired' || daysUntilRenewal < 0;
+    let isExpiringSoon = $derived(daysUntilRenewal > 0 && daysUntilRenewal <= 7);
+    let isExpired = $derived(subscription?.status === 'expired' || daysUntilRenewal < 0);
     
     // Usage percentages
-    $: bookingsUsagePercent = usage && subscription?.plan
+    let bookingsUsagePercent = $derived(usage && subscription?.plan
       ? (usage.bookings_count / subscription.plan.max_bookings_per_month) * 100
-      : 0;
+      : 0);
     
-    $: servicesUsagePercent = usage && subscription?.plan
+    let servicesUsagePercent = $derived(usage && subscription?.plan
       ? (usage.services_count / subscription.plan.max_services) * 100
-      : 0;
+      : 0);
     
-    $: staffUsagePercent = usage && subscription?.plan
+    let staffUsagePercent = $derived(usage && subscription?.plan
       ? (usage.staff_count / subscription.plan.max_staff_accounts) * 100
-      : 0;
+      : 0);
   </script>
   
-  <Card>
-    <div slot="header" class="flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900">Subscription Status</h3>
-      {#if showActions && subscription}
-        <Button variant="outline" size="sm" on:click={handleManageBilling}>
-          Manage Billing
-        </Button>
-      {/if}
-    </div>
+  <Card {header}>
+    {#snippet header()}
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">Subscription Status</h3>
+        {#if showActions && subscription}
+          <Button variant="outline" size="sm" on:click={handleManageBilling}>
+            Manage Billing
+          </Button>
+        {/if}
+      </div>
+    {/snippet}
     
     {#if loading}
       <div class="animate-pulse space-y-4">
@@ -305,7 +311,7 @@
   
   <!-- Cancel Confirmation Modal -->
   {#if cancelModalOpen}
-    <Modal bind:open={cancelModalOpen} title="Cancel Subscription">
+    <Modal bind:open={cancelModalOpen} title="Cancel Subscription" {footer}>
       <div class="space-y-4">
         <Alert type="warning">
           Are you sure you want to cancel your subscription? You'll lose access to premium features at the end of your billing period.
@@ -323,13 +329,15 @@
         </div>
       </div>
       
-      <div slot="footer" class="flex justify-end gap-3">
-        <Button variant="outline" on:click={() => cancelModalOpen = false}>
-          Keep Subscription
-        </Button>
-        <Button variant="danger" on:click={handleCancel} loading={cancelling}>
-          Cancel Subscription
-        </Button>
-      </div>
+      {#snippet footer()}
+        <div class="flex justify-end gap-3">
+          <Button variant="outline" on:click={() => cancelModalOpen = false}>
+            Keep Subscription
+          </Button>
+          <Button variant="danger" on:click={handleCancel} loading={cancelling}>
+            Cancel Subscription
+          </Button>
+        </div>
+      {/snippet}
     </Modal>
   {/if}

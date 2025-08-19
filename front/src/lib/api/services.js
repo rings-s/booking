@@ -1,7 +1,8 @@
 // src/lib/api/services.js
-import apiClient from './client';
+import apiClient from './clients';
 
 export const serviceAPI = {
+  // Main API methods
   async list(params = {}) {
     return apiClient.get('/services/', params);
   },
@@ -45,3 +46,6 @@ export const serviceAPI = {
     return apiClient.post('/services/update-order/', { updates });
   }
 };
+
+// Export alias for compatibility with components that expect 'servicesAPI'
+export const servicesAPI = serviceAPI;

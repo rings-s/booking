@@ -1,5 +1,6 @@
 <!-- src/routes/businesses/[slug]/services/new/+page.svelte -->
 <script>
+    import { onMount } from 'svelte';
     import { page } from '$app/stores';
     import { goto } from '$app/navigation';
     import { businessAPI } from '$lib/api/businesses';

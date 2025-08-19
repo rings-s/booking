@@ -16,9 +16,11 @@ class BusinessHoursSerializer(serializers.ModelSerializer):
 
 
 class ServiceSerializer(serializers.ModelSerializer):
+    business = serializers.UUIDField(write_only=True, required=False)
+    
     class Meta:
         model = Service
-        fields = ['id', 'name', 'description', 'duration_minutes', 
+        fields = ['id', 'business', 'name', 'description', 'duration_minutes', 
                  'price', 'is_active', 'max_bookings_per_slot', 
                  'buffer_time_minutes', 'created_at']
         read_only_fields = ['id', 'created_at']

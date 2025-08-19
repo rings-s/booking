@@ -1,16 +1,19 @@
 <script>
-  import { createEventDispatcher, onMount } from 'svelte';
+  import { onMount } from 'svelte';
 
   // Props to match usage in +page.svelte
-  export let query = '';
-  export let location = '';
-  export let placeholder = 'Search';
-  export let locationPlaceholder = 'Location';
-  export let autoFocus = false;
-  export let disabled = false;
-  export let name = 'search';
-
-  const dispatch = createEventDispatcher();
+  let {
+    query = '',
+    location = '',
+    placeholder = 'Search',
+    locationPlaceholder = 'Location',
+    autoFocus = false,
+    disabled = false,
+    name = 'search',
+    onsearch = () => {},
+    oninput = () => {},
+    ...restProps
+  } = $props();
 
   let queryEl;
 
@@ -20,17 +23,17 @@
 
   function handleSubmit(e) {
     e.preventDefault();
-    dispatch('search', { query, location });
+    onsearch({ query, location });
   }
 
   function clear() {
     query = '';
-    dispatch('input', { query, location });
+    oninput({ query, location });
     queryEl?.focus();
   }
 </script>
 
-<form class="relative w-full" {...$$restProps} role="search" on:submit|preventDefault={handleSubmit}>
+<form class="relative w-full" {...restProps} role="search" on:submit={handleSubmit}>
   <label class="sr-only" for={name}>Search</label>
 
   <div class="flex flex-col gap-2 sm:flex-row sm:items-center">

@@ -11,34 +11,37 @@
   import { BOOKING_STATUS } from '$lib/utils/constants';
   import { formatDate } from '$lib/utils/formatters';
   
-  export let customerView = false;
-  export let businessId = null;
-  export let showFilters = true;
-  export let showPagination = true;
-  export let itemsPerPage = 10;
-  export let autoRefresh = false;
-  export let refreshInterval = 30000; // 30 seconds
-  export let groupByDate = false;
-  export let compact = false;
+  let {
+    customerView = false,
+    businessId = null,
+    showFilters = true,
+    showPagination = true,
+    itemsPerPage = 10,
+    autoRefresh = false,
+    refreshInterval = 30000, // 30 seconds
+    groupByDate = false,
+    compact = false,
+    ...restProps
+  } = $props();
   
   const dispatch = createEventDispatcher();
   
-  let loading = true;
-  let currentPage = 1;
-  let totalPages = 1;
-  let totalCount = 0;
-  let filteredBookings = [];
-  let groupedBookings = {};
+  let loading = $state(true);
+  let currentPage = $state(1);
+  let totalPages = $state(1);
+  let totalCount = $state(0);
+  let filteredBookings = $state([]);
+  let groupedBookings = $state({});
   let refreshTimer = null;
   
-  let filters = {
+  let filters = $state({
     status: '',
     search: '',
     startDate: '',
     endDate: '',
     timeRange: 'all', // all, today, tomorrow, week, month
     sortBy: 'date_desc' // date_desc, date_asc, status, price
-  };
+  });
   
   // Quick filter presets
   const timeRangeOptions = [

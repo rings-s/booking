@@ -7,6 +7,7 @@
   import Input from '$lib/components/common/Input.svelte';
   import Button from '$lib/components/common/Button.svelte';
   import Alert from '$lib/components/common/Alert.svelte';
+  import { t } from '$lib/stores/i18n.js';
   import toast from 'svelte-french-toast';
   import { googleAuth } from '$lib/utils/google-auth';
   
@@ -25,10 +26,10 @@
     errors = {};
     
     if (!email) {
-      errors.email = 'Email is required';
+      errors.email = $t('validation.email_required');
     }
     if (!password) {
-      errors.password = 'Password is required';
+      errors.password = $t('validation.password_required');
     }
     
     if (Object.keys(errors).length > 0) return;
@@ -41,19 +42,19 @@
       if (data) {
         // Store the auth state
         auth.setUser(data.user);
-        toast.success('Welcome back!');
+        toast.success($t('auth.welcome_back'));
         
         // Use setTimeout to ensure toast shows before redirect
         setTimeout(() => {
           goto(redirectTo);
         }, 100);
       } else {
-        errors.general = error || 'Invalid email or password';
+        errors.general = error || $t('auth.invalid_credentials');
         toast.error(errors.general);
       }
     } catch (err) {
       console.error('Login error:', err);
-      errors.general = 'An error occurred during login';
+      errors.general = $t('error.login_error');
       toast.error(errors.general);
     }
     
@@ -71,7 +72,7 @@
         if (event.origin !== window.location.origin) return;
         
         if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
-          toast.success('Successfully signed in with Google!');
+          toast.success($t('auth.google_success'));
           setTimeout(() => {
             goto(redirectTo);
           }, 100);
@@ -121,12 +122,12 @@
         </a>
         
         <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
-          Welcome back
+          {$t('auth.welcome_back')}
         </h2>
         <p class="mt-2 text-sm text-gray-600">
-          Don't have an account?
+          {$t('auth.no_account')}
           <a href="/auth/register" class="font-medium text-indigo-600 hover:text-indigo-500 ml-1">
-            Sign up for free
+            {$t('auth.sign_up_free')}
           </a>
         </p>
       </div>
@@ -152,7 +153,7 @@
         <div class="space-y-4">
           <Input
             type="email"
-            label="Email address"
+            label={$t('common.email_address')}
             bind:value={email}
             error={errors.email}
             placeholder="you@example.com"
@@ -162,7 +163,7 @@
           
           <div>
             <label for="password" class="block text-sm font-medium text-gray-700">
-              Password
+              {$t('common.password')}
             </label>
             <div class="mt-1 relative">
               <input
@@ -204,17 +205,17 @@
               bind:checked={rememberMe}
               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
             />
-            <span class="ml-2 text-sm text-gray-900">Remember me</span>
+            <span class="ml-2 text-sm text-gray-900">{$t('auth.remember_me')}</span>
           </label>
           
           <a href="/auth/forgot-password" class="text-sm text-indigo-600 hover:text-indigo-500">
-            Forgot password?
+            {$t('auth.forgot_password')}
           </a>
         </div>
         
         <div>
           <Button type="submit" fullWidth {loading}>
-            Sign in
+            {$t('auth.sign_in')}
           </Button>
         </div>
         
@@ -223,7 +224,7 @@
             <div class="w-full border-t border-gray-300"></div>
           </div>
           <div class="relative flex justify-center text-sm">
-            <span class="px-2 bg-white text-gray-500">Or continue with</span>
+            <span class="px-2 bg-white text-gray-500">{$t('auth.or_continue_with')}</span>
           </div>
         </div>
         
@@ -244,7 +245,7 @@
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
             {/if}
-            {googleLoading ? 'Connecting to Google...' : 'Continue with Google'}
+            {googleLoading ? $t('auth.connecting_google') : $t('auth.continue_google')}
           </Button>
         </div>
       </form>
@@ -257,17 +258,17 @@
       <div class="absolute inset-0 bg-black opacity-20"></div>
       <div class="absolute inset-0 flex items-center justify-center p-12">
         <div class="max-w-md text-white">
-          <h3 class="text-4xl font-bold mb-6">Manage Your Business with Ease</h3>
+          <h3 class="text-4xl font-bold mb-6">{$t('auth.manage_business_ease')}</h3>
           <p class="text-lg mb-8 text-indigo-100">
-            Join thousands of businesses already using our platform to streamline their operations and grow their customer base.
+            {$t('auth.join_thousands_businesses')}
           </p>
           
           <div class="space-y-4">
             {#each [
-              'Automated scheduling and reminders',
-              'Secure payment processing',
-              'Customer relationship management',
-              'Real-time analytics and insights'
+              $t('business.automated_scheduling'),
+              $t('business.secure_payment_processing'),
+              $t('business.customer_relationship_management'),
+              $t('business.realtime_analytics')
             ] as feature}
               <div class="flex items-center">
                 <svg class="w-6 h-6 mr-3 text-green-400" fill="currentColor" viewBox="0 0 20 20">

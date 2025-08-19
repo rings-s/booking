@@ -10,10 +10,10 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 
 class IsBusinessOwner(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.user_type == 'business_owner'
+        return request.user.user_type == 'business_owner' or request.user.is_superuser
     
     def has_object_permission(self, request, view, obj):
-        return obj.owner == request.user
+        return obj.owner == request.user or request.user.is_superuser
 
 
 class HasActiveSubscription(permissions.BasePermission):

@@ -1,21 +1,22 @@
 <!-- src/lib/components/dashboard/StatsCard.svelte -->
 <script>
     import { formatCurrency, formatPercentage } from '$lib/utils/formatters';
-    import { createEventDispatcher } from 'svelte';
     
-    export let title = '';
-    export let value = 0;
-    export let change = null;
-    export let changeType = 'increase'; // 'increase' or 'decrease'
-    export let icon = null;
-    export let loading = false;
-    export let format = 'number'; // 'number', 'currency', 'percentage'
-    export let color = 'indigo'; // 'indigo', 'green', 'yellow', 'red', 'blue', 'purple'
-    export let description = '';
-    export let trend = [];
-    export let onClick = null;
-    
-    const dispatch = createEventDispatcher();
+    let {
+        title = '',
+        value = 0,
+        change = null,
+        changeType = 'increase', // 'increase' or 'decrease'
+        icon = null,
+        loading = false,
+        format = 'number', // 'number', 'currency', 'percentage'
+        color = 'indigo', // 'indigo', 'green', 'yellow', 'red', 'blue', 'purple'
+        description = '',
+        trend = [],
+        onClick = null,
+        onclick = () => {},
+        ...restProps
+    } = $props();
     
     const colors = {
       indigo: 'bg-indigo-100 text-indigo-600',
@@ -56,11 +57,11 @@
       if (onClick) {
         onClick();
       }
-      dispatch('click');
+      onclick();
     }
     
     // Calculate sparkline points for mini trend chart
-    $: sparklinePoints = trend.length > 0 ? calculateSparkline(trend) : '';
+    let sparklinePoints = $derived(trend.length > 0 ? calculateSparkline(trend) : '');
     
     function calculateSparkline(data) {
       if (data.length < 2) return '';
