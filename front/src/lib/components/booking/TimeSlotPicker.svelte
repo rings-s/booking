@@ -34,7 +34,7 @@
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
             "
-            on:click={() => selectSlot(slot)}
+            onclick={() => selectSlot(slot)}
           >
             {formatTime(slot.start_time)}
           </button>

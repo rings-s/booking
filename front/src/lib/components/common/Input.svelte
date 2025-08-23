@@ -40,10 +40,8 @@
       {required}
       {autocomplete}
       {value}
-      on:input={handleInput}
-      on:blur
-      on:focus
-      on:change
+      oninput={handleInput}
+      {...restProps}
       class="
         block w-full rounded-md shadow-sm
         {error 

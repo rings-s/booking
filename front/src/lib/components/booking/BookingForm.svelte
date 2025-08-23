@@ -28,7 +28,7 @@
     let currentStep = $state(1);
     let loading = $state(false);
     let loadingSlots = $state(false);
-    let loadingDates = false;
+    let loadingDates = $state(false);
     let errors = $state({});
     let termsAccepted = $state(false);
     
@@ -224,7 +224,7 @@
               <button
                 type="button"
                 class="group"
-                on:click={() => goToStep(step.num)}
+                onclick={() => goToStep(step.num)}
                 disabled={step.num > currentStep}
               >
                 <span class="flex items-center">
@@ -257,7 +257,7 @@
       </nav>
     </div>
     
-    <form on:submit|preventDefault={handleSubmit}>
+    <form onsubmit|preventDefault={handleSubmit}>
       {#if currentStep === 1}
         <!-- Step 1: Select Service and Date -->
         <div class="space-y-6">
@@ -276,7 +276,7 @@
                       name="service"
                       value={serviceOption.id}
                       bind:group={formData.service_id}
-                      on:change={handleServiceChange}
+                      onchange={handleServiceChange}
                       class="h-4 w-4 mt-1 text-indigo-600 focus:ring-indigo-500 border-gray-300"
                     />
                     <div class="ml-3 flex-1">

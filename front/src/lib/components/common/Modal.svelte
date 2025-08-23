@@ -42,7 +42,7 @@
         <div
           class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
           aria-hidden="true"
-          on:click={handleBackdropClick}
+          onclick={handleBackdropClick}
         ></div>
   
         <!-- Modal panel -->
@@ -56,7 +56,7 @@
                 <button
                   type="button"
                   class="text-gray-400 hover:text-gray-500"
-                  on:click={closeModal}
+                  onclick={closeModal}
                 >
                   <span class="sr-only">Close</span>
                   <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

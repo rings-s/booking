@@ -42,7 +42,8 @@
     "subscriptions": "الاشتراكات",
     "profile": "الملف الشخصي",
     "settings": "الإعدادات",
-    "logout": "تسجيل الخروج"
+    "logout": "تسجيل الخروج",
+    "manage_businesses": "اداره الاعمال"
   },
   "auth": {
     "login": "تسجيل الدخول",

@@ -82,9 +82,121 @@ class BookingSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'customer', 'total_price', 'created_at', 'updated_at']
     
     def validate(self, attrs):
-        # Validate booking time is within business hours
-        # Validate no conflicts with existing bookings
-        # Implementation would go here
+        """
+        Validate booking data and associate business and service instances
+        """
+        from django.shortcuts import get_object_or_404
+        from django.core.exceptions import ValidationError
+        from datetime import datetime, time
+        
+        # Get business and service instances from UUIDs
+        business_id = attrs.get('business_id')
+        service_id = attrs.get('service_id')
+        
+        if not business_id:
+            raise serializers.ValidationError({'business_id': 'Business ID is required'})
+        if not service_id:
+            raise serializers.ValidationError({'service_id': 'Service ID is required'})
+        
+        try:
+            business = Business.objects.get(id=business_id, is_active=True)
+            attrs['business'] = business
+        except Business.DoesNotExist:
+            raise serializers.ValidationError({'business_id': 'Invalid or inactive business'})
+        
+        try:
+            service = Service.objects.get(id=service_id, is_active=True)
+            attrs['service'] = service
+        except Service.DoesNotExist:
+            raise serializers.ValidationError({'service_id': 'Invalid or inactive service'})
+        
+        # Validate service belongs to business
+        if service.business != business:
+            raise serializers.ValidationError({
+                'service_id': 'Service does not belong to the specified business'
+            })
+        
+        # Validate booking date and time
+        booking_date = attrs.get('booking_date')
+        start_time = attrs.get('start_time')
+        end_time = attrs.get('end_time')
+        
+        if not booking_date:
+            raise serializers.ValidationError({'booking_date': 'Booking date is required'})
+        if not start_time:
+            raise serializers.ValidationError({'start_time': 'Start time is required'})
+        if not end_time:
+            raise serializers.ValidationError({'end_time': 'End time is required'})
+        
+        # Validate booking is not in the past
+        from django.utils import timezone
+        now = timezone.now()
+        booking_datetime = datetime.combine(booking_date, start_time)
+        
+        if booking_datetime <= now:
+            raise serializers.ValidationError({
+                'booking_date': 'Cannot book appointments in the past'
+            })
+        
+        # Validate end time is after start time
+        if end_time <= start_time:
+            raise serializers.ValidationError({
+                'end_time': 'End time must be after start time'
+            })
+        
+        # Calculate duration and validate against service duration
+        duration_minutes = (datetime.combine(booking_date, end_time) - 
+                          datetime.combine(booking_date, start_time)).total_seconds() / 60
+        
+        if abs(duration_minutes - service.duration_minutes) > 5:  # 5 minute tolerance
+            raise serializers.ValidationError({
+                'end_time': f'Booking duration must match service duration ({service.duration_minutes} minutes)'
+            })
+        
+        # Validate business hours
+        weekday = booking_date.weekday()
+        business_hours = business.hours.filter(weekday=weekday, is_closed=False).first()
+        
+        if not business_hours:
+            raise serializers.ValidationError({
+                'booking_date': 'Business is closed on this day'
+            })
+        
+        if start_time < business_hours.opening_time or end_time > business_hours.closing_time:
+            raise serializers.ValidationError({
+                'start_time': f'Booking must be within business hours ({business_hours.opening_time} - {business_hours.closing_time})'
+            })
+        
+        # Check for booking conflicts (excluding current booking for updates)
+        existing_bookings = Booking.objects.filter(
+            business=business,
+            booking_date=booking_date,
+            status__in=['pending', 'confirmed']
+        )
+        
+        # Exclude current booking if this is an update
+        if self.instance:
+            existing_bookings = existing_bookings.exclude(id=self.instance.id)
+        
+        for existing in existing_bookings:
+            # Check for time overlap
+            if (start_time < existing.end_time and end_time > existing.start_time):
+                raise serializers.ValidationError({
+                    'start_time': f'Time slot conflicts with existing booking ({existing.start_time} - {existing.end_time})'
+                })
+        
+        # Check service capacity
+        overlapping_bookings = existing_bookings.filter(
+            service=service,
+            start_time__lt=end_time,
+            end_time__gt=start_time
+        ).count()
+        
+        if overlapping_bookings >= service.max_bookings_per_slot:
+            raise serializers.ValidationError({
+                'start_time': 'This time slot is fully booked for this service'
+            })
+        
         return attrs
 
 

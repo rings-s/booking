@@ -72,7 +72,7 @@
           <button
             type="button"
             class="-m-1.5 inline-flex rounded-md p-1.5 {style.text} hover:bg-opacity-20 focus:outline-none"
-            on:click={dismiss}
+            onclick={dismiss}
           >
             <span class="sr-only">Dismiss</span>
             <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

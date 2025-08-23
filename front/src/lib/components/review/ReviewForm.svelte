@@ -31,9 +31,9 @@
       anonymous: review?.anonymous || false
     };
     
-    let errors = {};
-    let images = [];
-    let uploadingImages = false;
+    let errors = $state({});
+    let images = $state([]);
+    let uploadingImages = $state(false);
     let categoryRatings = {
       service: 0,
       value: 0,
@@ -166,7 +166,7 @@
     let suggestedFeedback = $derived(quickFeedback[formData.rating] || []);
   </script>
   
-  <form on:submit|preventDefault={handleSubmit} class="max-w-2xl mx-auto space-y-6">
+  <form onsubmit|preventDefault={handleSubmit} class="max-w-2xl mx-auto space-y-6">
     {#if booking}
       <Alert type="info">
         <div class="flex items-center justify-between">
@@ -290,7 +290,7 @@
                   <button
                     type="button"
                     class="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700"
-                    on:click={() => handleQuickFeedback(feedback)}
+                    onclick={() => handleQuickFeedback(feedback)}
                   >
                     {feedback}
                   </button>
@@ -342,7 +342,7 @@
                     <button
                       type="button"
                       class="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      on:click={() => removeImage(index)}
+                      onclick={() => removeImage(index)}
                     >
                       <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -363,7 +363,7 @@
                 accept="image/*"
                 multiple
                 class="hidden"
-                on:change={handleImageUpload}
+                onchange={handleImageUpload}
                 disabled={uploadingImages || images.length >= 5}
               />
               <svg class="w-5 h-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -408,7 +408,7 @@
     {/if}
     
     <div class="flex justify-between">
-      <Button variant="outline" type="button" on:click={() => dispatch('cancel')}>
+      <Button variant="outline" type="button" onclick={() => dispatch('cancel')}>
         Cancel
       </Button>
       <Button type="submit" {loading} disabled={formData.rating === 0}>

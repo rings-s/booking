@@ -44,7 +44,7 @@
         src={imageSrc}
         {alt}
         class="h-full w-full object-cover"
-        on:error={() => imageError = true}
+        onerror={() => imageError = true}
       />
     {:else}
       <div class="h-full w-full bg-indigo-600 flex items-center justify-center text-white font-medium">

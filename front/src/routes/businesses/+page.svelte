@@ -1,6 +1,5 @@
 <!-- src/routes/businesses/+page.svelte -->
 <script>
-    import { onMount } from 'svelte';
     import { page } from '$app/stores';
     import { goto } from '$app/navigation';
     import { businessAPI } from '$lib/api/businesses';
@@ -13,20 +12,20 @@
     import Spinner from '$lib/components/common/Spinner.svelte';
     import toast from 'svelte-french-toast';
     
-    let businesses = [];
-    let loading = true;
-    let searchQuery = '';
-    let selectedCategory = '';
-    let selectedLocation = '';
-    let sortBy = 'relevance';
-    let viewMode = 'grid'; // 'grid', 'list', 'map'
-    let showFilters = false;
-    let currentPage = 1;
-    let totalPages = 1;
-    let totalResults = 0;
+    let businesses = $state([]);
+    let loading = $state(true);
+    let searchQuery = $state('');
+    let selectedCategory = $state('');
+    let selectedLocation = $state('');
+    let sortBy = $state('relevance');
+    let viewMode = $state('grid'); // 'grid', 'list', 'map'
+    let showFilters = $state(false);
+    let currentPage = $state(1);
+    let totalPages = $state(1);
+    let totalResults = $state(0);
     
     // Filter states
-    let filters = {
+    let filters = $state({
       priceRange: '',
       rating: 0,
       openNow: false,
@@ -34,13 +33,18 @@
       categories: [],
       services: [],
       distance: 10
-    };
+    });
     
-    // Get query params
-    $: searchQuery = $page.url.searchParams.get('q') || '';
-    $: selectedCategory = $page.url.searchParams.get('category') || '';
+    // Get query params using derived state
+    $effect(() => {
+      if ($page.url) {
+        searchQuery = $page.url.searchParams.get('q') || '';
+        selectedCategory = $page.url.searchParams.get('category') || '';
+      }
+    });
     
-    onMount(async () => {
+    // Load businesses when page loads or params change
+    $effect(async () => {
       await searchBusinesses();
     });
     
@@ -69,9 +73,9 @@
       loading = false;
     }
     
-    function handleSearch(event) {
-      searchQuery = event.detail.query;
-      selectedLocation = event.detail.location;
+    function handleSearch(searchData) {
+      searchQuery = searchData.query || '';
+      selectedLocation = searchData.location || '';
       currentPage = 1;
       updateURL();
       searchBusinesses();
@@ -109,7 +113,7 @@
         <SearchBar 
           bind:query={searchQuery}
           bind:location={selectedLocation}
-          on:search={handleSearch}
+          onsearch={handleSearch}
           class="max-w-3xl"
         />
         
@@ -121,7 +125,7 @@
                      {selectedCategory === category 
                        ? 'bg-white text-indigo-600' 
                        : 'bg-white/20 text-white hover:bg-white/30'}"
-              on:click={() => {
+              onclick={() => {
                 selectedCategory = selectedCategory === category ? '' : category;
                 handleFilterChange();
               }}
@@ -141,7 +145,7 @@
           <Button
             variant="outline"
             size="sm"
-            on:click={() => showFilters = !showFilters}
+            onclick={() => showFilters = !showFilters}
           >
             <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -151,7 +155,7 @@
           
           <select
             bind:value={sortBy}
-            on:change={searchBusinesses}
+            onchange={searchBusinesses}
             class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             {#each sortOptions as option}
@@ -174,7 +178,7 @@
             ] as view}
               <button
                 class="p-2 {viewMode === view.mode ? 'bg-indigo-100 text-indigo-600' : 'text-gray-600 hover:bg-gray-100'}"
-                on:click={() => viewMode = view.mode}
+                onclick={() => viewMode = view.mode}
               >
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={view.icon} />
@@ -191,7 +195,7 @@
           <div class="w-64 flex-shrink-0">
             <FilterPanel 
               bind:filters
-              on:change={handleFilterChange}
+              onchange={handleFilterChange}
             />
           </div>
         {/if}
@@ -210,9 +214,18 @@
               <h3 class="mt-2 text-lg font-medium text-gray-900">No businesses found</h3>
               <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filters</p>
               <div class="mt-6">
-                <Button variant="outline" on:click={() => {
+                <Button variant="outline" onclick={() => {
                   searchQuery = '';
-                  filters = {};
+                  selectedLocation = '';
+                  filters = {
+                    priceRange: '',
+                    rating: 0,
+                    openNow: false,
+                    hasOffers: false,
+                    categories: [],
+                    services: [],
+                    distance: 10
+                  };
                   searchBusinesses();
                 }}>
                   Clear Filters
@@ -222,7 +235,7 @@
           {:else if viewMode === 'map'}
             <MapView 
               {businesses}
-              on:select={(e) => goto(`/businesses/${e.detail.slug}`)}
+              onselect={(business) => goto(`/businesses/${business.slug}`)}
               class="h-[600px] rounded-lg shadow-lg"
             />
           {:else}
@@ -231,7 +244,7 @@
                 <BusinessCard 
                   {business}
                   view={viewMode}
-                  on:click={() => goto(`/businesses/${business.slug}`)}
+                  onclick={() => goto(`/businesses/${business.slug}`)}
                 />
               {/each}
             </div>
@@ -242,7 +255,7 @@
                 <Pagination
                   bind:currentPage
                   {totalPages}
-                  on:change={searchBusinesses}
+                  onchange={searchBusinesses}
                 />
               </div>
             {/if}

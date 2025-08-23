@@ -160,7 +160,7 @@
               <Button
                 variant="outline"
                 class="bg-white/10 backdrop-blur-sm text-white border-white/30 hover:bg-white/20"
-                on:click={toggleFavorite}
+                onclick={toggleFavorite}
               >
                 <svg class="w-5 h-5 {isFavorite ? 'fill-current' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -170,7 +170,7 @@
               <Button
                 variant="outline"
                 class="bg-white/10 backdrop-blur-sm text-white border-white/30 hover:bg-white/20"
-                on:click={shareBusiness}
+                onclick={shareBusiness}
               >
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a3 3 0 10-5.356 0m-9.032-4.026A5.002 5.002 0 0119.288 6m0 0A5.002 5.002 0 0115 7m4.288-1a3 3 0 10-4.026 1.797M9 13a3 3 0 110-6 3 3 0 010 6z" />
@@ -180,7 +180,7 @@
               <Button
                 variant="outline"
                 class="bg-white/10 backdrop-blur-sm text-white border-white/30 hover:bg-white/20"
-                on:click={() => showQRModal = true}
+                onclick={() => showQRModal = true}
               >
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
@@ -201,7 +201,7 @@
                        {activeTab === tab 
                          ? 'border-indigo-500 text-indigo-600' 
                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
-                on:click={() => activeTab = tab}
+                onclick={() => activeTab = tab}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 {#if tab === 'reviews'}
@@ -254,7 +254,7 @@
               <div>
                 {#if $auth.isAuthenticated}
                   <div class="mb-6 text-right">
-                    <Button on:click={() => showReviewModal = true}>
+                    <Button onclick={() => showReviewModal = true}>
                       Write a Review
                     </Button>
                   </div>
@@ -279,7 +279,7 @@
             <div class="bg-white rounded-lg shadow-sm p-6">
               <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div class="space-y-3">
-                <Button fullWidth on:click={() => {
+                <Button fullWidth onclick={() => {
                   console.log('Book Now clicked', { 
                     isAuthenticated: $auth.isAuthenticated, 
                     servicesCount: services.length 
@@ -317,7 +317,7 @@
                   Call {business.phone}
                 </Button>
                 
-                <Button fullWidth variant="outline" on:click={() => window.open(`https://maps.google.com/?q=${business.address}`)}>
+                <Button fullWidth variant="outline" onclick={() => window.open(`https://maps.google.com/?q=${business.address}`)}>
                   <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />

@@ -76,7 +76,7 @@
   <div class="flex-1 hidden md:flex items-center justify-center">
     <div class="inline-flex items-center gap-1">
       <!-- Prev -->
-      <Button size="md" variant="outline" disabled={current === 1} on:click={() => setPage(current - 1)} aria-label="Previous page">
+      <Button size="md" variant="outline" disabled={current === 1} onclick={() => setPage(current - 1)} aria-label="Previous page">
         <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
         Prev
       </Button>
@@ -94,7 +94,7 @@
                       : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 focus:ring-gray-300'}"
             aria-current={it === current ? 'page' : undefined}
             aria-label={`Page ${it}`}
-            on:click={() => setPage(it)}
+            onclick={() => setPage(it)}
           >
             {it}
           </button>
@@ -102,7 +102,7 @@
       {/each}
 
       <!-- Next -->
-      <Button size="md" variant="outline" disabled={current === pagesCount} on:click={() => setPage(current + 1)} aria-label="Next page">
+      <Button size="md" variant="outline" disabled={current === pagesCount} onclick={() => setPage(current + 1)} aria-label="Next page">
         Next
         <svg class="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
       </Button>
@@ -112,7 +112,7 @@
   <!-- Compact / Mobile -->
   {#if compact}
     <div class="flex-1 flex items-center justify-end gap-2">
-      <Button size="md" variant="outline" disabled={current === 1} on:click={() => setPage(current - 1)} aria-label="Previous page">
+      <Button size="md" variant="outline" disabled={current === 1} onclick={() => setPage(current - 1)} aria-label="Previous page">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
       </Button>
       <div class="text-sm text-gray-700">
@@ -120,13 +120,13 @@
         <span class="text-gray-400">/</span>
         <span class="font-semibold">{pagesCount}</span>
       </div>
-      <Button size="md" variant="outline" disabled={current === pagesCount} on:click={() => setPage(current + 1)} aria-label="Next page">
+      <Button size="md" variant="outline" disabled={current === pagesCount} onclick={() => setPage(current + 1)} aria-label="Next page">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
       </Button>
     </div>
   {:else}
     <div class="flex-1 flex items-center justify-end sm:justify-between gap-2 md:hidden">
-      <Button size="md" variant="outline" disabled={current === 1} on:click={() => setPage(current - 1)} aria-label="Previous page">
+      <Button size="md" variant="outline" disabled={current === 1} onclick={() => setPage(current - 1)} aria-label="Previous page">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
       </Button>
       <div class="text-sm text-gray-700">
@@ -134,7 +134,7 @@
         <span class="text-gray-400">/</span>
         <span class="font-semibold">{pagesCount}</span>
       </div>
-      <Button size="md" variant="outline" disabled={current === pagesCount} on:click={() => setPage(current + 1)} aria-label="Next page">
+      <Button size="md" variant="outline" disabled={current === pagesCount} onclick={() => setPage(current + 1)} aria-label="Next page">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
       </Button>
     </div>

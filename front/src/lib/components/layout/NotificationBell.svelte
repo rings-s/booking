@@ -56,7 +56,7 @@
     <button
       type="button"
       class="relative p-1 text-gray-400 hover:text-gray-500"
-      on:click={toggleDropdown}
+      onclick={toggleDropdown}
     >
       <span class="sr-only">View notifications</span>
       <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -79,7 +79,7 @@
             {#each notifications as notification}
               <button
                 class="w-full px-4 py-3 hover:bg-gray-50 text-left {notification.is_read ? 'opacity-60' : ''}"
-                on:click={() => markAsRead(notification.id)}
+                onclick={() => markAsRead(notification.id)}
               >
                 <p class="text-sm font-medium text-gray-900">{notification.title}</p>
                 <p class="text-sm text-gray-500">{notification.message}</p>

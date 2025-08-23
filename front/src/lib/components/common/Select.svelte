@@ -34,8 +34,8 @@
       {disabled}
       {required}
       bind:value
-      on:change={handleChange}
-      on:blur
+      onchange={handleChange}
+      {...restProps}
       class="
         block w-full rounded-md shadow-sm
         {error 

@@ -1272,26 +1272,30 @@ class BookingViewSet(viewsets.ModelViewSet):
             defaults={'phone': ''}
         )
         
-        # Calculate total price
-        service_id = self.request.data.get('service_id')
-        service = get_object_or_404(Service, id=service_id)
+        # Get business and service from validated data (already validated in serializer)
+        business = serializer.validated_data.get('business')
+        service = serializer.validated_data.get('service')
+        
+        # Calculate total price with any additional fees
         total_price = service.price
         
-        # Save booking
+        # Save booking with all validated data
         booking = serializer.save(
             customer=customer,
+            business=business,
+            service=service,
             total_price=total_price
         )
         
         # Auto-confirm if business setting allows
-        if booking.business.auto_confirm_bookings:
+        if business.auto_confirm_bookings:
             booking.status = 'confirmed'
             booking.save()
         
         # Send notifications
         self._send_booking_notification(booking, 'created')
         
-        # Update customer stats (fixed F expression usage)
+        # Update customer stats
         Customer.objects.filter(id=customer.id).update(
             total_bookings=F('total_bookings') + 1
         )

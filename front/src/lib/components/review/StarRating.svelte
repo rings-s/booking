@@ -30,7 +30,8 @@
           type="button"
           class="{interactive ? 'cursor-pointer' : 'cursor-default'}"
           disabled={!interactive}
-          on:click={() => setRating(i + 1)}
+          onclick={() => setRating(i + 1)}
+          aria-label={`Rate ${i + 1} star${i === 0 ? '' : 's'}`}
         >
           <svg
             class="{sizes[size]} {i < rating ? 'text-yellow-400' : 'text-gray-300'}"

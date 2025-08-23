@@ -41,8 +41,8 @@
 </svelte:head>
 
 <div class="min-h-screen bg-white">
-	<Header />
-	<main>
+	<Header  />
+	<main class="mt-12">
 		{@render children?.()}
 	</main>
 	

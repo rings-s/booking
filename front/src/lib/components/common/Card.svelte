@@ -35,8 +35,9 @@
       {paddings[padding]}
       {hoverable ? 'hover:shadow-lg transition-shadow cursor-pointer' : ''}
     "
-    on:click
-    on:keydown
+    {...restProps}
+    role={hoverable ? 'button' : 'region'}
+    tabindex={hoverable ? '0' : undefined}
   >
     {#if title || subtitle || header}
       <div class="mb-4">

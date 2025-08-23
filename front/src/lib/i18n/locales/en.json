@@ -42,6 +42,7 @@
     "subscriptions": "Subscriptions",
     "profile": "Profile",
     "settings": "Settings",
+    "manage_businesses": "manage Businesses",
     "logout": "Logout"
   },
   "auth": {

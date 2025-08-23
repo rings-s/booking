@@ -42,7 +42,7 @@
             type="button"
             class="absolute -translate-x-1/2 -translate-y-full"
             style={`left:${pos.x * 100}%; top:${pos.y * 100}%;`}
-            on:click={() => select(b)}
+            onclick={() => select(b)}
             aria-label={`Select ${b?.name ?? 'business'}`}
             title={b?.name}
           >

@@ -24,14 +24,14 @@
         ...restProps
     } = $props();
     
-    let showResponseModal = false;
-    let responseText = '';
-    let responding = false;
-    let showReportModal = false;
-    let reportReason = '';
-    let reporting = false;
-    let helpful = review.helpful_count || 0;
-    let hasVoted = false;
+    let showResponseModal = $state(false);
+    let responseText = $state('');
+    let responding = $state(false);
+    let showReportModal = $state(false);
+    let reportReason = $state('');
+    let reporting = $state(false);
+    let helpful = $state(review.helpful_count || 0);
+    let hasVoted = $state(false);
     
     async function handleRespond() {
       if (!responseText.trim()) {
@@ -154,7 +154,7 @@
               <button
                 type="button"
                 class="text-gray-400 hover:text-gray-500"
-                on:click={() => onmenu(review)}
+                onclick={() => onmenu(review)}
               >
                 <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -190,7 +190,7 @@
               <button
                 type="button"
                 class="relative w-20 h-20 rounded-lg overflow-hidden group"
-                on:click={() => onviewimage({ review, imageIndex: index })}
+                onclick={() => onviewimage({ review, imageIndex: index })}
               >
                 <img
                   src={image.thumbnail || image.url}
@@ -237,7 +237,7 @@
               <button
                 type="button"
                 class="flex items-center text-sm text-gray-500 hover:text-gray-700"
-                on:click={handleHelpful}
+                onclick={handleHelpful}
                 disabled={hasVoted}
               >
                 <svg class="w-4 h-4 mr-1 {hasVoted ? 'text-green-600' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -250,7 +250,7 @@
               <button
                 type="button"
                 class="flex items-center text-sm text-gray-500 hover:text-gray-700"
-                on:click={() => onshare(review)}
+                onclick={() => onshare(review)}
               >
                 <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a3 3 0 10-4.732 0m-9.032-4.026A3 3 0 108.684 6.632m0 6.736a3 3 0 00-4.732 0" />
@@ -263,7 +263,7 @@
                 <button
                   type="button"
                   class="flex items-center text-sm text-gray-500 hover:text-gray-700"
-                  on:click={() => showReportModal = true}
+                  onclick={() => showReportModal = true}
                 >
                   <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
@@ -280,7 +280,7 @@
                   <Button
                     size="sm"
                     variant="outline"
-                    on:click={() => showResponseModal = true}
+                    onclick={() => showResponseModal = true)
                   >
                     Respond
                   </Button>
@@ -290,7 +290,7 @@
                   <Button
                     size="sm"
                     variant="outline"
-                    on:click={handleFeature}
+                    onclick={handleFeature}
                   >
                     Feature
                   </Button>
@@ -377,10 +377,10 @@
 
 {#snippet responseFooter()}
   <div class="flex justify-end gap-3">
-    <Button variant="outline" on:click={() => showResponseModal = false}>
+    <Button variant="outline" onclick={() => showResponseModal = false}>
       Cancel
     </Button>
-    <Button on:click={handleRespond} loading={responding}>
+    <Button onclick={handleRespond} loading={responding}>
       Post Response
     </Button>
   </div>
@@ -388,10 +388,10 @@
 
 {#snippet reportFooter()}
   <div class="flex justify-end gap-3">
-    <Button variant="outline" on:click={() => showReportModal = false}>
+    <Button variant="outline" onclick={() => showReportModal = false}>
       Cancel
     </Button>
-    <Button variant="danger" on:click={handleReport} loading={reporting}>
+    <Button variant="danger" onclick={handleReport} loading={reporting}>
       Report Review
     </Button>
   </div>
